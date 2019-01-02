@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="stats">
+
+	<typeAlias alias="statsVO" type="com.ai.fishdr.vo.StatsVO"/>
+		
+	<insert id="insertVisitorCount" parameterClass="statsVO">
+		INSERT INTO STATS VALUES (sysdate,#conect_ip#,#conect_environment#)
+	</insert>	
+	
+	<select id="getVisitorCount" resultClass="java.util.HashMap">
+		SELECT (SELECT COUNT(*) FROM STATS WHERE TO_DATE(CONECT_TIME, 'YYYY-MM-DD') = TO_DATE(SYSDATE, 'YYYY-MM-DD')) AS "TODAY",
+		    (SELECT COUNT(*) FROM STATS WHERE TO_DATE(CONECT_TIME, 'YYYY-MM-DD') = TO_DATE(SYSDATE-1, 'YYYY-MM-DD')) AS "DAY1",
+			(SELECT COUNT(*) FROM STATS WHERE TO_DATE(CONECT_TIME, 'YYYY-MM-DD') = TO_DATE(SYSDATE-2, 'YYYY-MM-DD'))  AS "DAY2",
+		    (SELECT COUNT(*) FROM STATS WHERE TO_DATE(CONECT_TIME, 'YYYY-MM-DD') = TO_DATE(SYSDATE-3, 'YYYY-MM-DD'))  AS "DAY3",
+			(SELECT COUNT(*) FROM STATS WHERE TO_DATE(CONECT_TIME, 'YYYY-MM-DD') = TO_DATE(SYSDATE-4, 'YYYY-MM-DD'))  AS "DAY4",
+			(SELECT COUNT(*) FROM STATS WHERE TO_DATE(CONECT_TIME, 'YYYY-MM-DD') = TO_DATE(SYSDATE-5, 'YYYY-MM-DD'))  AS "DAY5",
+			(SELECT COUNT(*) FROM STATS WHERE TO_DATE(CONECT_TIME, 'YYYY-MM-DD') = TO_DATE(SYSDATE-6, 'YYYY-MM-DD'))  AS "DAY6"
+		FROM DUAL
+	</select>
+	
+	<select id="getEachBoardCount" parameterClass="String" resultClass="java.util.HashMap">
+		SELECT 
+				 (SELECT BOARD_NAME FROM BOARDMANAGE WHERE BOARD_CODE= #board_code#)AS BOARD_NAME 
+				,(SELECT COUNT(*) FROM BOARD WHERE BOARD_CODE = #board_code#) AS WRITE_COUNT    
+				
+			FROM DUAL 
+	</select>
+	
+	<select id="getMemberIncreaseRatio" resultClass="java.util.HashMap">
+		SELECT (SELECT COUNT(*) FROM MEMBER WHERE TO_DATE(MEM_REG_DATE, 'YYYY-MM-DD')BETWEEN TO_DATE(SYSDATE-7, 'YYYY-MM-DD') AND TO_DATE(SYSDATE, 'YYYY-MM-DD')) AS "WEEK",
+		       (SELECT COUNT(*) FROM MEMBER WHERE TO_DATE(MEM_REG_DATE, 'YYYY-MM-DD')BETWEEN TO_DATE(SYSDATE-14, 'YYYY-MM-DD') AND TO_DATE(SYSDATE-8, 'YYYY-MM-DD')) AS "WEEK1",
+		       (SELECT COUNT(*) FROM MEMBER WHERE TO_DATE(MEM_REG_DATE, 'YYYY-MM-DD')BETWEEN TO_DATE(SYSDATE-21, 'YYYY-MM-DD') AND TO_DATE(SYSDATE-15, 'YYYY-MM-DD')) AS "WEEK2",
+		       (SELECT COUNT(*) FROM MEMBER WHERE TO_DATE(MEM_REG_DATE, 'YYYY-MM-DD')BETWEEN TO_DATE(SYSDATE-28, 'YYYY-MM-DD') AND TO_DATE(SYSDATE-22, 'YYYY-MM-DD')) AS "WEEK3"
+		FROM DUAL
+			
+	</select>
+	
+	<select id="getFamousWriteList" resultClass="java.util.HashMap">
+		SELECT ROWNUM 
+				,A.*
+		FROM(SELECT M.BOARD_NAME 
+				,  B.BO_TITLE, R.MEM_NICKNAME
+				, TO_CHAR(B.BO_REG_DATE,'YY/MM/DD HH24:MI') AS BO_REG_DATE
+				, B.BO_GOOD_HIT
+				,B.BOARD_CODE
+				,B.BO_NO
+				,M.BOARD_ENG_NAME
+				FROM BOARDMANAGE M , BOARD B, MEMBER R
+				WHERE M.BOARD_CODE = B.BOARD_CODE
+		    		AND B.BO_WRITER = R.MEM_ID
+		    		AND B.BO_STATUS = 'y'
+		  <![CDATA[	
+		   			AND B.BO_GOOD_HIT > 0
+		    	ORDER BY B.BO_GOOD_HIT DESC)A
+		 WHERE ROWNUM <=10
+		 ]]>
+	</select>
+	<typeAlias alias="mdcin" type="com.ai.fishdr.vo.MedicineVO"/>
+	<select id="getFamouseMdcin" resultClass="mdcin">
+		 SELECT ROWNUM 
+		 		,A.MDCIN_CODE,A.MDCIN_ENTRPS_NAME,A.MDCIN_PRDUCT_NAME
+		  <![CDATA[	
+		 FROM (SELECT MDCIN_CODE
+		 			,MDCIN_ENTRPS_NAME
+		 			,MDCIN_PRDUCT_NAME
+		  FROM MEDICINE 
+		  WHERE MDCIN_HIT > 0 
+		  	AND MDCIN_STATUS = 'y'
+		  	ORDER BY MDCIN_HIT DESC)A
+  	  WHERE ROWNUM <=10
+  	   ]]>
+	</select>
+	
+	<select id="getSecReason" resultClass="java.util.HashMap">
+		SELECT (SELECT COUNT(*) FROM SECESSION WHERE SECSN_REASON ='정보 부족' ) AS "REASON1",
+		    (SELECT COUNT(*) FROM SECESSION WHERE SECSN_REASON  LIKE '서비스기능%' ) AS "REASON2",
+			(SELECT COUNT(*) FROM SECESSION WHERE SECSN_REASON LIKE '개인정보%' )  AS "REASON3",
+		    (SELECT COUNT(*) FROM SECESSION WHERE SECSN_REASON ='기타' )  AS "REASON4"
+		FROM DUAL
+	</select>
+		
+	<select id="getMdcinCnt" resultClass="int">
+		SELECT COUNT(MDCIN_CODE) FROM MEDICINE WHERE MDCIN_STATUS='y'
+	</select>	
+		
+	<select id="getTotalStorage" resultClass="String">
+		 SELECT ROUND(ROUND(SUM(FILE_SIZE)/1000)/1000,1)||'mb' AS STORAGE FROM BOARD_FILE WHERE FILE_STATUS='y'
+	</select>	
+		
+	<select id="getTotalPrsCnt" resultClass="int">
+		SELECT COUNT(PRSCRPTN_CODE) FROM PRESCRIPTION WHERE PRSCRPTN_STATUS='y'
+	</select>	
+	
+	
+	<select id="getFishInfo" resultClass="java.util.HashMap">
+		SELECT FISH_NAME, COUNT(*) AS CNT FROM DOCTOR
+		  GROUP BY FISH_NAME 
+		  <![CDATA[
+		  HAVING COUNT(*)>0
+		  ]]>
+	</select>
+		
+</sqlMap>

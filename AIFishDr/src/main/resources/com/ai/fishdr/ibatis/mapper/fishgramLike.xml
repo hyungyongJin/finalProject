@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "fishgramLike">
+
+	<typeAlias alias="fishgramLikeVO" type="com.ai.fishdr.vo.FishgramLikeVO"/>
+	
+	<sql id = "selectAll">
+
+		SELECT M.MEM_ID, M.MEM_NICKNAME, M.PROFILE_STATUS, FP.FP_FILE_SAVE_NAME
+		  FROM MEMBER M, FACEPICTURE FP, FISHGRAM_LIKE FL
+		 WHERE M.MEM_ID = FP.FP_MEM_ID(+)
+		   AND M.MEM_ID = FL.MEM_ID
+		   AND FL.BO_NO = #bo_no#
+		   AND FL.LIKE_STATUS = 'y'
+		 ORDER BY M.MEM_NICKNAME
+	
+	</sql>
+	
+	
+	
+	<!-- 선택한 피쉬그램 글에 좋아요 추가 -->
+	<insert id = "insertFishgramDiaryLike" parameterClass="Map">
+	
+		<selectKey keyProperty="like_code" resultClass = "String">
+		
+			SELECT 'LC' || FISHGRAM_LIKE_SEQ.NEXTVAL FROM DUAL
+		
+		</selectKey>
+	
+		INSERT INTO
+		
+			FISHGRAM_LIKE (
+							LIKE_CODE,
+							MEM_ID,
+							BO_NO
+						  )
+					
+			 	   VALUES (
+							#like_code#,
+							#mem_id#,
+							#bo_no#
+				    	  )
+	
+	</insert>
+	
+	
+	<!-- 선택한 피쉬그램 글에 추가한 좋아요를 취소하기 -->
+	<delete id = "deleteFishgramDiaryLike" parameterClass="Map">
+	
+		DELETE FISHGRAM_LIKE
+		 WHERE MEM_ID = #mem_id#
+		   AND BO_NO = #bo_no#
+	
+	</delete>
+	
+	
+	
+	
+	
+	<!-- 현재 글의 좋아요 수 구하기 -->
+	<select id = "totalFishgramDiaryLikeCount" parameterClass="String" resultClass="int">
+	
+		SELECT COUNT(LIKE_CODE)
+		  FROM FISHGRAM_LIKE
+		 WHERE BO_NO = #bo_no#
+	
+	</select>
+	
+	
+	<!-- 해당 글의 특정 아이디의 좋아요 상태 값을 가져오기 -->
+	<select id = "getLikeStatus" parameterClass="Map" resultClass="String">
+	
+		SELECT LIKE_STATUS
+		  FROM FISHGRAM_LIKE
+		 WHERE MEM_ID = #mem_id#
+		   AND BO_NO = #bo_no#
+	
+	</select>
+	
+	
+	<!-- 입력받은 닉네임 조건에 맞는 좋아요 누른 회원 리스트 출력 -->
+	<select id = "searchLike" parameterClass="Map" resultClass="java.util.HashMap">
+	
+		SELECT B.*
+		
+		  FROM (SELECT ROWNUM RNUM, A.*	
+		  		  FROM (<include refid="selectAll"/>) A
+		  		) B
+		
+		<![CDATA[
+		
+ 		 WHERE B.RNUM >= #startCount#
+ 		   AND B.RNUM <= #endCount#
+		
+ 		]]>
+		
+		ORDER BY B.RNUM
+	
+	
+	
+	
+	</select>
+	
+	
+	
+	
+	
+</sqlMap>

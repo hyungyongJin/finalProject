@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="message">
+	<typeAlias alias="messageVO" type="com.ai.fishdr.vo.MessageVO"/>
+		
+		<insert id="warnMessage" parameterClass="messageVO">
+		 	<selectKey keyProperty="ms_no" type="pre">
+		 		SELECT MESSAGE_SEQ.NEXTVAL FROM DUAL
+		 	</selectKey>
+			INSERT INTO MESSAGE
+				(MS_NO
+				,MS_SEND_ID
+				,ME_GET_ID
+				,MS_CONTENT
+				)
+				VALUES
+				(#ms_no#
+				,#ms_send_id#
+				,#me_get_id#
+				,#ms_content#
+				)
+				<selectKey keyProperty="ms_no" resultClass="String">
+					SELECT ME_GET_ID FROM MESSAGE WHERE MS_NO = #ms_no#
+				</selectKey>
+				
+		</insert>
+		
+		<select id="getMsgCheck" parameterClass="String" resultClass="int">
+			SELECT COUNT(*) FROM MESSAGE 
+			WHERE  MS_GET_DATE IS NULL
+				AND ME_GET_ID = #me_get_id#
+				 AND ME_STATUS = 'y' 
+		</select>
+		
+		<insert id="insertMsg" parameterClass="messageVO">
+		 	<selectKey keyProperty="ms_no" type="pre">
+		 		SELECT MESSAGE_SEQ.NEXTVAL FROM DUAL
+		 	</selectKey>
+			INSERT INTO MESSAGE
+				(MS_NO
+				,MS_SEND_ID
+				,ME_GET_ID
+				,MS_CONTENT
+				)
+				VALUES
+				(#ms_no#
+				,#ms_send_id#
+				,#me_get_id#
+				,#ms_content#
+				)
+		</insert>
+		
+		<select id="receiveMessageList" parameterClass="map" resultClass="java.util.HashMap">
+			SELECT B.* 
+				FROM(SELECT ROWNUM AS RNUM , A.* 
+					FROM (SELECT M.MS_NO,
+								TO_CHAR(M.MS_SEND_DATE,'YY/MM/DD HH24:MI') MS_SEND_DATE
+								,M.MS_CONTENT
+								,M.MS_SEND_ID
+								,M.MS_GET_DATE
+								,(SELECT MEM_NICKNAME FROM MEMBER A WHERE A.MEM_ID = M.MS_SEND_ID ) MEM_NICKNAME
+                                ,M.ME_GET_ID
+						FROM MESSAGE M , MEMBER R
+						WHERE M.ME_GET_ID = R.MEM_ID
+							AND M.ME_GET_ID = #mem_id#
+				 			AND M.ME_STATUS = 'y'
+				 			ORDER BY M.MS_SEND_DATE DESC)A )B
+			<![CDATA[
+	   		WHERE
+	   			B.RNUM >= #startCount#
+	   			AND B.RNUM <= #endCount#
+			]]>	
+			
+		</select>
+		<select id="totalReceiveMsgCount" parameterClass="String" resultClass="int">
+			SELECT COUNT(*)
+				FROM MESSAGE
+				WHERE ME_GET_ID = #mem_id#
+				 AND ME_STATUS = 'y' 
+		</select>
+		
+		<update id="delMsg" parameterClass="list">
+			UPDATE MESSAGE
+				SET ME_STATUS = 'n'
+				WHERE MS_NO IN
+				<iterate open="(" close=")" conjunction=","  >
+					#delList[]#
+				</iterate>
+		</update>
+		<update id="delSendMsg" parameterClass="list">
+			UPDATE MESSAGE
+				SET MS_STATUS = 'n'
+				WHERE MS_NO IN
+				<iterate open="(" close=")" conjunction=","  >
+					#delList[]#
+				</iterate>
+		</update>
+		<update id="checkReadMsg" parameterClass="String">
+			UPDATE MESSAGE
+				SET MS_GET_DATE = SYSDATE
+				WHERE MS_NO = #ms_no#
+		</update>
+		<select id="sendMessageList" parameterClass="map" resultClass="java.util.HashMap">
+			   SELECT B.* 
+				FROM(SELECT ROWNUM AS RNUM , A.* 
+					FROM (SELECT M.MS_NO,
+								TO_CHAR(M.MS_SEND_DATE,'YY/MM/DD HH24:MI') MS_SEND_DATE
+								,M.MS_CONTENT
+								,M.MS_SEND_ID
+								,NVL(TO_CHAR(M.MS_GET_DATE,'YY/MM/DD HH24:MI'),'읽지않음') AS MS_GET_DATE
+								,(SELECT MEM_NICKNAME FROM MEMBER A WHERE A.MEM_ID = M.ME_GET_ID ) MEM_NICKNAME
+                                ,M.ME_GET_ID
+						FROM MESSAGE M , MEMBER R
+						WHERE M.MS_SEND_ID = R.MEM_ID
+				 			AND M.MS_STATUS = 'y'
+                            AND M.MS_SEND_ID = #mem_id#
+				 			ORDER BY M.MS_SEND_DATE DESC)A )B
+			<![CDATA[
+	   		WHERE
+	   			B.RNUM >= #startCount#
+	   			AND B.RNUM <= #endCount#
+			]]>	
+			
+		</select>
+		<select id="totalSendMsgCount" parameterClass="String" resultClass="int">
+			SELECT COUNT(*)
+				FROM MESSAGE
+				WHERE MS_SEND_ID = #mem_id#
+				 AND MS_STATUS = 'y' 
+		</select>
+		
+		
+</sqlMap>

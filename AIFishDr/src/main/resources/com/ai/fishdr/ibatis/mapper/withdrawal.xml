@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="withdrawal">
+
+	<typeAlias alias="withdrawalVO" type="com.ai.fishdr.vo.WithdrawalVO"/>
+		
+		<sql id="selectAll">
+			SELECT 
+				A.*, B.MDCIN_PRDUCT_NAME, C.FISH_NAME
+			FROM 
+				WITHDRAWAL A, MEDICINE B, FISH C
+			WHERE
+				A.MDCIN_CODE = B.MDCIN_CODE
+			  AND A.FISH_CODE = C.FISH_CODE
+			  AND A.WITHDRAWAL_STATUS = 'y'
+		</sql>
+		
+		<sql id="search">
+			<dynamic prepend="AND">
+				<isNotEmpty property="keyword">
+						<isEqual property="search" compareValue="TOTAL" open="(" close=")">
+							C.FISH_NAME LIKE '%'||#keyword#||'%'
+							OR B.MDCIN_PRDUCT_NAME LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+					
+					<isNotEmpty property="keyword">
+						<isEqual property="search" compareValue="FISH_NAME">
+							C.FISH_NAME LIKE '%' || #keyword# || '%'
+						</isEqual>
+					</isNotEmpty>
+					
+					<isNotEmpty property="keyword">
+						<isEqual property="search" compareValue="MDCIN_PRDUCT_NAME">
+							B.MDCIN_PRDUCT_NAME LIKE '%' || #keyword# || '%'
+						</isEqual>
+					</isNotEmpty>
+				
+			</dynamic>
+		</sql>
+		
+		<select id="getWithDrawalList" parameterClass="map" resultClass="withdrawalVO">
+			SELECT
+				B.*
+				FROM
+					(SELECT ROWNUM RNUM, A.*
+					   FROM (<include refid="selectAll"/>
+					   		 <include refid="search"/>
+					   		 ORDER BY TO_NUMBER(SUBSTR(WITHDRAWAL_CODE,5)) ASC) A) B
+					   	<![CDATA[
+					   		WHERE   
+	 	 				   		B.RNUM <= #startCount#   
+					   			AND B.RNUM >= #endCount#  
+						]]>	 
+						ORDER BY B.RNUM DESC
+		</select>
+		
+		<update id="withDrawalDelete" parameterClass="map">
+			UPDATE 
+				WITHDRAWAL
+			SET 
+				WITHDRAWAL_STATUS='n'
+			WHERE
+			 	WITHDRAWAL_CODE=#withdrawal_code#	
+		</update>
+		
+		<update id="getWithDrawalUpdate" parameterClass="withdrawalVO">
+			UPDATE WITHDRAWAL
+			SET  WITHDRAWAL_PERIOD = #withdrawal_period# 
+				<dynamic>
+				  <isNotEmpty prepend="," property="mdcin_code">
+				   	MDCIN_CODE = #mdcin_code#
+				  </isNotEmpty>
+				  <isNotEmpty prepend="," property="fish_code">
+					 FISH_CODE = #fish_code#
+				  </isNotEmpty>
+				</dynamic>
+			WHERE  WITHDRAWAL_CODE = #withdrawal_code#
+		</update>
+		
+		<select id="getWithDrawalInfo" parameterClass="map" resultClass="withdrawalVO">
+			<include refid="selectAll"/>
+			AND A.WITHDRAWAL_CODE = #withdrawal_code#
+		</select>
+		
+		<insert id="withDrawalInsert" parameterClass="withdrawalVO">
+			INSERT INTO WITHDRAWAL
+			(
+				WITHDRAWAL_CODE,
+				WITHDRAWAL_PERIOD,
+				MDCIN_CODE,
+				FISH_CODE
+			)
+			VALUES 
+			(
+				'with'||WITHDRAWAL_SEQ.NEXTVAL,
+				#withdrawal_period#,
+				#mdcin_code#,
+				#fish_code#
+			)
+			
+		</insert>
+		
+		<select id="getTotalCount" parameterClass="map" resultClass="int">
+			SELECT 
+				COUNT(A.WITHDRAWAL_CODE)
+			FROM
+				WITHDRAWAL A, MEDICINE B, FISH C
+			WHERE
+				A.FISH_CODE = C.FISH_CODE
+				AND A.MDCIN_CODE = B.MDCIN_CODE
+				AND A.WITHDRAWAL_STATUS = 'y'
+			<include refid="search"/>
+		</select>
+		
+		<select id="withCheck" parameterClass="map" resultClass="withdrawalVO">
+			SELECT 
+				*
+			FROM
+				WITHDRAWAL
+			WHERE
+				FISH_CODE = #fish_code#
+				AND MDCIN_CODE = #mdcin_code#
+				AND WITHDRAWAL_STATUS = 'y'
+		
+		</select>
+		
+		<!-- 어종명과 의약품 코드를 입력하여 휴약기간을 뽑아오는 쿼리  -->
+		<select id="getWithInfo" parameterClass="map" resultClass="withdrawalVO">
+			SELECT 
+			    A.*
+			FROM
+			    WITHDRAWAL A, (SELECT FISH_CODE FROM FISH WHERE FISH_NAME = #fish_name#) B
+			WHERE
+			    A.MDCIN_CODE = #mdcin_code#
+			    AND A.FISH_CODE = B.FISH_CODE
+		</select>
+		
+</sqlMap>

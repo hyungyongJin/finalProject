@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<!-- 게시판 테이블 데이터 맵핑 -->    
+<sqlMap namespace="noticeboard">
+
+	<typeAlias alias="noticeboardVO" type="com.ai.fishdr.vo.BoardVO"/>
+	
+	<sql id="selectAll">
+			SELECT B.BO_NO
+				, B.BOARD_CODE
+				, B.BO_TITLE
+				, BO_CONTENT
+				,TO_CHAR(B.BO_REG_DATE,'YY/MM/DD HH24:MI') BO_REG_DATE
+				,B.BO_WRITER
+				,B.BO_GOOD_HIT
+				,M.MEM_NICKNAME 
+				,M.MEM_ID
+				,B.BO_HIT
+				,G.BOARD_NAME
+			FROM BOARD B, MEMBER M , BOARDMANAGE G
+			WHERE B.BO_WRITER = M.MEM_ID
+				AND B.BOARD_CODE = G.BOARD_CODE
+        		AND B.BO_STATUS= 'y'
+                AND B.BOARD_CODE ='board001'
+	</sql>
+
+	<sql id="searchOption">
+		<dynamic prepend="AND">
+			<isNotEmpty property="keyword">
+						<isEqual property="search" compareValue="TOTAL" open="(" close=")">
+							 B.BO_TITLE LIKE '%'||#keyword#||'%'
+							 OR B.BO_CONTENT LIKE '%'||#keyword#||'%'
+							 OR M.MEM_NICKNAME LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+					<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="TITLE" >
+							 B.BO_TITLE LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+					<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="CONTENT" >
+							 B.BO_CONTENT LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+					<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="WRITER" >
+							 M.MEM_NICKNAME LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+		</dynamic>
+	</sql>
+	
+	<select id="getNoticeList" parameterClass="map" resultClass="java.util.HashMap">
+ 		 SELECT C.*
+				  FROM (SELECT ROWNUM RNUM, A.*
+						  FROM (<include refid="selectAll"/>
+						        <include refid="searchOption"/>
+						  ORDER BY B.BO_NO       ) A) C
+				 <![CDATA[
+				 WHERE C.RNUM <= #startCount#
+				 	AND C.RNUM >=#endCount#
+				 	]]>
+				 ORDER BY C.RNUM DESC
+	</select>
+	
+	<select id="getTotalCount" parameterClass="map" resultClass="int">
+		SELECT COUNT(B.BO_NO)
+			FROM BOARD B, MEMBER M
+			WHERE B.BO_WRITER = M.MEM_ID
+                AND B.BOARD_CODE = 'board001'
+				AND B.BO_STATUS= 'y'
+		<include refid="searchOption"/> 
+	</select>
+	
+	<select id="getNoticeInfo" parameterClass="map" resultClass="java.util.HashMap">
+			SELECT B.* ,M.BOARD_NAME ,M.BOARD_FUNCTION, R.MEM_NICKNAME
+	   			 FROM BOARD B, BOARDMANAGE M, MEMBER R
+				WHERE B.BOARD_CODE = M.BOARD_CODE
+					 AND B.BO_WRITER = R.MEM_ID
+	       			 AND B.BO_NO = #bo_no#
+		
+	</select>
+	
+	<update id="updateHit" parameterClass="map">
+		UPDATE BOARD
+			SET BO_HIT = BO_HIT+1
+			WHERE BO_NO = #bo_no#
+	</update>
+	
+	<update id="updateGoodHit" parameterClass="String">
+		UPDATE BOARD
+			SET  BO_GOOD_HIT = BO_GOOD_HIT+1
+          WHERE BO_NO = #bo_no#			
+	</update>
+	<typeAlias alias="Sttemnt" type="com.ai.fishdr.vo.SttemntVO" />
+	
+	
+</sqlMap>

@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "friend">
+
+	<typeAlias alias="friendVO" type="com.ai.fishdr.vo.FriendVO"/>
+	
+	
+	<sql id = "selectAllReceive">
+		
+		SELECT M.MEM_ID, M.MEM_NICKNAME, M.PROFILE_STATUS, FP.FP_FILE_SAVE_NAME, TO_CHAR(FR.FR_APPLY_DATE, 'YYYY-MM-DD HH24:MI:SS') FR_APPLY_DATE
+		  FROM MEMBER M, FACEPICTURE FP, FRIEND FR
+		 WHERE M.MEM_ID = FP.FP_MEM_ID(+)
+		   AND M.MEM_ID = FR.MEM_ID
+		   AND FR.FR_ID = #mem_id#
+		   AND FR.FR_STATUS = 'w'
+		ORDER BY FR.FR_APPLY_DATE DESC
+		 	
+	</sql>
+	
+	<sql id = "selectAllSend">
+		
+		SELECT M.MEM_ID, M.MEM_NICKNAME, M.PROFILE_STATUS, FP.FP_FILE_SAVE_NAME, TO_CHAR(FR.FR_APPLY_DATE, 'YYYY-MM-DD HH24:MI:SS') FR_APPLY_DATE
+		  FROM MEMBER M, FACEPICTURE FP, FRIEND FR
+		 WHERE M.MEM_ID = FP.FP_MEM_ID(+)
+		   AND M.MEM_ID = FR.FR_ID
+		   AND FR.MEM_ID = #mem_id#
+		   AND FR.FR_STATUS = 'w'
+		ORDER BY FR.FR_APPLY_DATE DESC
+		 	
+	</sql>
+	
+	<sql id = "searchFriendNotFinish">
+	
+		SELECT *
+		
+		  FROM (
+					SELECT M.MEM_ID, M.MEM_NICKNAME, M.PROFILE_STATUS, FP.FP_FILE_SAVE_NAME, TO_CHAR(FR.FR_ACCEPT_DATE, 'YYYY-MM-DD HH24:MI') FR_ACCEPT_DATE
+			          FROM MEMBER M, FACEPICTURE FP, FRIEND FR
+			         WHERE M.MEM_ID = FP.FP_MEM_ID(+)
+			           AND (M.MEM_ID = FR.MEM_ID OR M.MEM_ID = FR.FR_ID)
+			           AND (FR.MEM_ID = #mem_id# OR FR.FR_ID = #mem_id#)
+			           AND FR.FR_STATUS = 'y'
+			      ORDER BY M.MEM_ID
+		       )
+		       
+		 WHERE MEM_ID != #mem_id#
+		   AND MEM_NICKNAME LIKE '%' || #mem_nickname# || '%'
+	  ORDER BY FR_ACCEPT_DATE
+	
+	</sql>
+	
+	
+	<!-- 중복 친구 신청 방지 -->
+	<select id = "duplicateApplyProtect" parameterClass="Map" resultClass="int">
+	
+		SELECT COUNT(FR_NO)
+		  FROM FRIEND
+		 WHERE MEM_ID = #mem_id#
+		   AND FR_ID = #fr_id#
+	
+	</select>
+	
+	<!-- 특정 회원에게 친구 신청하기 -->
+	<insert id = "applyFishgramFriend" parameterClass="Map">
+	
+		<selectKey keyProperty="fr_no" resultClass="String">
+		
+			SELECT FRIEND_SEQ.NEXTVAL FROM DUAL
+		
+		</selectKey>
+		
+		INSERT INTO FRIEND (
+								FR_NO,
+								MEM_ID,
+								FR_ID
+							)
+					
+				 	VALUES (
+			 					#fr_no#,
+			 					#mem_id#,
+			 					#fr_id#
+							)
+		
+	</insert>
+	
+	
+	<!-- 내가 상대방에게 요청한 친구 신청을 취소하기 -->
+	<delete id = "cancelFishgramFriendApply" parameterClass="Map">
+	
+		DELETE FRIEND
+		 WHERE MEM_ID = #mem_id#
+		   AND FR_ID = #fr_id#
+	
+	</delete>
+	
+	
+	<!-- 상대방이 나에게 요청한 친구 신청을 수락하기 -->
+	<update id = "acceptFishgramFriendApply" parameterClass="Map">
+	
+		UPDATE FRIEND
+		   SET FR_STATUS = 'y',
+			   FR_ACCEPT_DATE = SYSDATE
+		 WHERE MEM_ID = #fr_id#
+		   AND FR_ID = #mem_id#
+	
+	</update>
+	
+	
+	<!-- 상대방이 나에게 요청한 친구 신청을 거절하기 -->
+	<delete id = "refuseFishgramFriendApply" parameterClass="Map">
+	
+		DELETE FRIEND
+		 WHERE MEM_ID = #fr_id#
+		   AND FR_ID = #mem_id#
+	
+	</delete>
+	
+	
+	<!-- 친구신청 아이디와 친구신청 받은 아이디를 이용한 친구신청 상태 정보 불러오기 -->
+	<select id = "getFishgramFriendInfo" parameterClass="Map" resultClass="friendVO">
+	
+		SELECT *
+		  FROM FRIEND
+		 WHERE MEM_ID = #mem_id#
+		   AND FR_ID = #fr_id# 
+		   AND FR_STATUS = 'w'
+		
+	</select>
+	
+	
+	<!-- 아이디를 이용한 친구상태 확인하기 -->
+	<select id = "getFrStatus" parameterClass="Map" resultClass="String">
+	
+		SELECT FR_STATUS
+		  FROM FRIEND
+		 WHERE MEM_ID = #mem_id#
+		   AND FR_ID = #fr_id#
+		
+	</select>
+	
+	
+	<!-- 자신에게 친구신청을 요청한 회원의 수 구하기 -->
+	<select id = "totalReceiveFriendApplyCount" parameterClass="String" resultClass="int">
+	
+		SELECT COUNT(FR_NO)
+		  FROM FRIEND
+		 WHERE FR_ID = #mem_id#
+		   AND FR_STATUS = 'w'
+		
+	</select>
+	
+	
+	<!-- 내가 친구신청 요청한 회원의 수 구하기 -->
+	<select id = "totalSendFriendApplyCount" parameterClass="String" resultClass="int">
+	
+		SELECT COUNT(FR_NO)
+		  FROM FRIEND
+		 WHERE MEM_ID = #mem_id#
+		   AND FR_STATUS = 'w'
+		
+	</select>
+	
+	
+	<!-- 자신에게 친구신청을 요청한 회원들 리스트 보기 -->
+	<select id = "receiveFriendApplyList" parameterClass="Map" resultClass="java.util.HashMap">
+		
+		SELECT B.*
+		
+		  FROM (SELECT ROWNUM RNUM, A.*
+		  		  FROM (<include refid = "selectAllReceive"/>) A
+		  	    ) B
+		  
+		<![CDATA[
+		
+		 WHERE B.RNUM >= #startCount#
+		   AND B.RNUM <= #endCount#
+		
+		]]>
+		
+		ORDER BY B.RNUM
+		 	
+	</select>
+	
+	
+	<!-- 내가 친구신청을 한 회원들 리스트 보기 -->
+	<select id = "sendFriendApplyList" parameterClass="Map" resultClass="java.util.HashMap">
+	
+		SELECT B.*
+		
+		  FROM (SELECT ROWNUM RNUM, A.*
+		  		  FROM (<include refid = "selectAllSend"/>) A
+		  	    ) B
+		  
+		<![CDATA[
+		
+		 WHERE B.RNUM >= #startCount#
+		   AND B.RNUM <= #endCount#
+		
+		]]>
+		
+		ORDER BY B.RNUM
+	
+	</select>
+	
+	<!-- 친구 관리 메뉴에서 입력받은 닉네임 조건에 맞는 친구 수 구하기 -->
+	<select id = "totalSearchFriendCount" parameterClass="Map" resultClass="int">
+	
+		SELECT COUNT(MEM_ID)
+		
+  		  FROM (
+		            SELECT M.MEM_ID, M.MEM_NICKNAME, M.PROFILE_STATUS, FP.FP_FILE_SAVE_NAME, TO_CHAR(FR.FR_APPLY_DATE, 'YYYY-MM-DD HH24:MI') FR_APPLY_DATE
+		              FROM MEMBER M, FACEPICTURE FP, FRIEND FR
+		             WHERE M.MEM_ID = FP.FP_MEM_ID(+)
+		               AND (M.MEM_ID = FR.MEM_ID OR M.MEM_ID = FR.FR_ID)
+		               AND (FR.MEM_ID = #mem_id# OR FR.FR_ID = #mem_id#)
+		               AND FR.FR_STATUS = 'y'
+		            ORDER BY M.MEM_ID
+		       )
+		       
+ 		 WHERE MEM_ID != #mem_id#
+   		   AND MEM_NICKNAME LIKE '%' || #mem_nickname# || '%'
+	
+	</select>
+	
+	
+	<!-- 친구 관리 메뉴에서 입력받은 닉네임 조건에 맞는 친구 리스트 출력  -->
+	<select id = "searchFriend" parameterClass="Map" resultClass="java.util.HashMap">
+	
+		SELECT B.*
+		
+		  FROM (SELECT ROWNUM RNUM, A.*	
+		  		  FROM (<include refid="searchFriendNotFinish"/>) A
+		  		) B
+		
+		<![CDATA[
+		
+ 		 WHERE B.RNUM >= #startCount#
+ 		   AND B.RNUM <= #endCount#
+		
+ 		]]>
+		
+		ORDER BY B.RNUM
+			
+	</select>
+		
+</sqlMap>

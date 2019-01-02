@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "fishgramFile">
+
+	<typeAlias alias="fishgramFileVO" type="com.ai.fishdr.vo.FishgramFileVO"/>
+	
+	<insert id = "insertFishgramFileInfo" parameterClass="fishgramFileVO">
+	
+		INSERT INTO BOARD_FILE (
+								FILE_NO,
+								BO_NO,
+								FILE_NAME,
+								FILE_SAVE_NAME,
+								FILE_CONTENT_TYPE,
+								FILE_SIZE
+							   )
+						VALUES
+							   (
+								BOARD_FILE_SEQ.NEXTVAL,
+								#bo_no#,
+								#file_name#,
+								#file_save_name#,
+								#file_content_type#,
+								#file_size#,
+							   )
+							   
+	</insert>
+		
+</sqlMap>

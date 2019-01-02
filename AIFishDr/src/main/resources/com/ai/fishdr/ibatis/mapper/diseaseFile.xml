@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="diseaseFile">
+	<typeAlias alias="diseaseFileVO" type="com.ai.fishdr.vo.DiseaseFileVO"/>
+		
+		
+	<sql id="allList">
+			SELECT D.DISS_CODE
+				,D.DISS_NAME 
+				,MAX((SELECT COUNT(*) FROM DISEASE_FILE A WHERE A.DISS_CODE = D.DISS_CODE AND A.FILE_STATUS='y' )) AS COUNT
+				FROM DISEASE D 
+					,DISEASE_FILE F
+					<![CDATA[
+				WHERE D.DISS_CODE=F.DISS_CODE(+)
+					AND D.DISS_STATUS = 'y'
+				]]>
+			<dynamic prepend="AND">
+				<isNotEmpty property="keyword">
+						<isEqual property="search" compareValue="TOTAL" open="(" close=")">
+							 D.DISS_CODE LIKE '%'||#keyword#||'%'
+							 OR D.DISS_NAME LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+					<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="CODE" >
+							 D.DISS_CODE LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+					<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="NAME" >
+							 D.DISS_NAME LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+			</dynamic>
+			<dynamic prepend="AND">
+				<isNotEmpty property="noPics">
+						<isEqual property="noPics" compareValue="1">
+						  (SELECT COUNT(*) FROM DISEASE_FILE A WHERE A.DISS_CODE = D.DISS_CODE AND A.FILE_STATUS='y' ) = 0
+						</isEqual>
+						<isEqual property="noPics" compareValue="2">
+						  (SELECT COUNT(*) FROM DISEASE_FILE A WHERE A.DISS_CODE = D.DISS_CODE AND A.FILE_STATUS='y' ) > 0
+						</isEqual>
+					</isNotEmpty>
+			</dynamic>
+				GROUP BY D.DISS_CODE
+					, D.DISS_NAME
+	</sql>
+		<select id="getDisaseFileList" parameterClass="map" resultClass="java.util.HashMap">
+			SELECT
+				B.*
+			FROM
+				(SELECT ROWNUM RNUM, A.*
+				   FROM (<include refid="allList"/> )A) B
+	   		WHERE
+	   		<![CDATA[
+	   			B.RNUM <= #startCount#
+	   			AND B.RNUM >= #endCount#
+			]]>	
+			ORDER BY B.RNUM DESC
+		</select>
+		<select id="getTotalFileCount" parameterClass="map" resultClass="int">
+			SELECT count(DISTINCT(d.diss_code))
+				FROM DISEASE D ,DISEASE_FILE F
+						<![CDATA[
+				WHERE D.DISS_CODE=F.DISS_CODE(+)
+					AND D.DISS_STATUS = 'y'
+			    			]]>	
+			    <dynamic prepend="AND">
+					<isNotEmpty property="keyword">
+						<isEqual property="search" compareValue="TOTAL" open="(" close=")">
+							 D.DISS_CODE LIKE '%'||#keyword#||'%'
+							 OR D.DISS_NAME LIKE '%'||#keyword#||'%'
+						</isEqual>
+						</isNotEmpty>
+						<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="CODE" >
+							 D.DISS_CODE LIKE '%'||#keyword#||'%'
+						</isEqual>
+						</isNotEmpty>
+						<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="NAME" >
+							 D.DISS_NAME LIKE '%'||#keyword#||'%'
+						</isEqual>
+						</isNotEmpty>
+				</dynamic>
+				<dynamic prepend="AND">
+					<isNotEmpty property="noPics">
+						<isEqual property="noPics" compareValue="1">
+						  (SELECT COUNT(*) FROM DISEASE_FILE A WHERE A.DISS_CODE = D.DISS_CODE  AND A.FILE_STATUS='y') = 0
+						</isEqual>
+						<isEqual property="noPics" compareValue="2">
+						  (SELECT COUNT(*) FROM DISEASE_FILE A WHERE A.DISS_CODE = D.DISS_CODE  AND A.FILE_STATUS='y') > 0
+						</isEqual>
+					</isNotEmpty>
+				</dynamic>
+		</select>
+		
+		<insert id="insertDissFile" parameterClass="diseaseFileVO">
+			<selectKey keyProperty="file_no">
+				SELECT DISEASE_FILE_SEQ.NEXTVAL FROM DUAL
+			</selectKey>
+			INSERT INTO DISEASE_FILE
+				(
+				FILE_NO
+				,FILE_NAME
+				,FILE_SAVE_NAME
+				,FILE_CONTENT_TYPE
+				,DISS_CODE
+				)
+				VALUES
+				(
+				#file_no#
+				,#file_name#
+				,#file_save_name#
+				,#file_content_type#
+				,#diss_code#
+				)
+		</insert>
+		<select id="getDissFileInfo" parameterClass="String" resultClass="diseaseFileVO">
+			SELECT * 
+				FROM DISEASE_FILE
+				WHERE DISS_CODE =#diss_code#
+					AND FILE_STATUS = 'y'
+		</select>
+		<update id="deleteDissFile" parameterClass="String">
+			UPDATE DISEASE_FILE
+				SET	  FILE_STATUS = 'n'
+				WHERE FILE_NO = #file_no#
+		</update>
+		
+		<sql id="searchFish_Diss">
+			<dynamic prepend="AND">
+				<isNotEmpty property="keyword">
+					<isEqual property="search" compareValue="FISH">
+						F.FISH_NAME LIKE '%'||#keyword#||'%'
+					</isEqual>
+				</isNotEmpty>
+				<isNotEmpty property="keyword">
+					<isEqual property="search" compareValue="DISS">
+						D.DISS_NAME LIKE '%'||#keyword#||'%'
+					</isEqual>
+				</isNotEmpty>
+			</dynamic>
+		</sql>
+		
+		<select id="getShowDissList" parameterClass="map" resultClass="java.util.HashMap">
+			SELECT B.* FROM(SELECT ROWNUM RNUM, A.* FROM 
+			(SELECT D.DISS_CODE,F.FISH_NAME,D.DISS_NAME ,D.DISS_REASON 
+				FROM DISS_FISH H ,DISEASE D, FISH F
+			   WHERE H.DISS_CODE=D.DISS_CODE
+			   AND H.FISH_CODE = F.FISH_CODE
+			    aND D.DISS_STATUS ='y'
+    			AND F.FISH_STATUS ='y'
+    			<include refid="searchFish_Diss"/>)A)B
+    		 WHERE
+	   		<![CDATA[
+	   			B.RNUM >= #startCount#
+	   			AND B.RNUM <= #endCount#
+			]]>	
+    			
+		</select>
+		
+		<select id="getShowDissCnt" parameterClass="map" resultClass="int">
+			 SELECT COUNT(D.DISS_CODE)
+				             FROM DISS_FISH H ,DISEASE D, FISH F
+				   WHERE H.DISS_CODE=D.DISS_CODE
+				   AND H.FISH_CODE = F.FISH_CODE
+				    AND D.DISS_STATUS ='y'
+				    AND F.FISH_STATUS ='y'
+				    <include refid="searchFish_Diss"/>
+		</select>
+		
+		
+		
+		
+</sqlMap>

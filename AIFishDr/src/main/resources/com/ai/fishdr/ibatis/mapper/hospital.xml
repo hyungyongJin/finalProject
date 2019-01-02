@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "hospital">
+	<typeAlias alias="hospitalVO" type="com.ai.fishdr.vo.HospitalVO"/>
+		
+		<sql id="all">
+			SELECT *
+				FROM HOSPITAL
+				WHERE HOSPITAL_STATUS = 'y'
+		</sql>
+		<sql id="searchOption">
+			<dynamic prepend="AND">
+				<isNotEmpty property="keyword">
+							<isEqual property="search" compareValue="TOTAL" open="(" close=")">
+								 HOSPITAL_NAME LIKE '%'||#keyword#||'%'
+								 OR HOSPITAL_ADDR LIKE '%'||#keyword#||'%'
+								 OR HOSPITAL_MAIL LIKE '%'||#keyword#||'%'
+								 OR HOSPITAL_ADDR LIKE '%'||#keyword#||'%'
+								 OR HOSPITAL_AGP_CODE LIKE '%'||#keyword#||'%'
+							</isEqual>
+						</isNotEmpty>
+						<isNotEmpty  property="keyword">
+							<isEqual property="search" compareValue="NAME" >
+								 BHOSPITAL_NAME LIKE '%'||#keyword#||'%'
+							</isEqual>
+						</isNotEmpty>
+						<isNotEmpty  property="keyword">
+							<isEqual property="search" compareValue="ADDR" >
+								 HOSPITAL_ADDR LIKE '%'||#keyword#||'%'
+							</isEqual>
+						</isNotEmpty>
+			</dynamic>
+		</sql>		
+		<select id="hospitalList" parameterClass="map" resultClass="hospitalVO">
+			SELECT C.*
+				  FROM (SELECT ROWNUM RNUM, A.*
+						  FROM (<include refid="all"/>
+						        <include refid="searchOption"/>) A) C
+				 <![CDATA[
+				 WHERE C.RNUM <= #startCount#
+				 	AND C.RNUM >=#endCount#
+				 	]]>
+				 ORDER BY C.RNUM DESC
+		</select>
+		
+		<select id="getTotalCount" parameterClass="map" resultClass="int">
+			SELECT COUNT(HOSPITAL_NAME)
+				FROM HOSPITAL
+				WHERE 1=1
+				<include refid="searchOption"/>
+		</select>
+		
+		<select id="hospitaInfo" parameterClass="map" resultClass="hospitalVO">
+			SELECT *
+				FROM HOSPITAL
+				WHERE HOSPITAL_CODE = #hospital_code#
+		</select>
+		
+		<select id="converHospitalInfo" parameterClass="String" resultClass="hospitalVO">
+			SELECT
+				*
+			FROM
+				HOSPITAL
+			WHERE 
+				HOSPITAL_NAME = #hospital_name#
+		</select>
+		
+		<update id="deleteHospital" parameterClass="map">
+			UPDATE HOSPITAL
+				SET HOSPITAL_STATUS = 'n'
+				WHERE HOSPITAL_CODE = #hospital_code#
+		</update>
+		
+		<insert id="insertHospital" parameterClass="hospitalVO">
+			<selectKey keyProperty="hospital_code">
+			SELECT 'HSPTL'||TRIM(TO_CHAR((SELECT COUNT(HOSPITAL_CODE)+1 FROM HOSPITAL),'00'))as hospital_code FROM DUAL
+			</selectKey>
+				INSERT INTO HOSPITAL
+					(HOSPITAL_CODE
+					,HOSPITAL_NAME
+					,HOSPITAL_ADDR
+					,HOSPITAL_PHONE
+					,HOSPITAL_FAX
+					,HOSPITAL_MAIL
+					,HOSPITAL_DR_NAME
+					,HOSPITAL_AGP_CODE
+					,HOSPITAL_LICENSE
+					)
+					VALUES
+					(#hospital_code#
+					,#hospital_name#
+					,#hospital_addr#
+					,#hospital_phone#
+					,#hospital_fax#
+					,#hospital_mail#
+					,#hospital_dr_name#
+					,#hospital_agp_code#
+					,#hospital_license#
+					)
+			<selectKey resultClass="String" keyProperty="hospital_code">
+				SELECT HOSPITAL_NAME FROM HOSPITAL WHERE HOSPITAL_CODE = #hospital_code#
+			</selectKey>
+		</insert>
+		
+		<update id="updateHospital" parameterClass="hospitalVO">
+			UPDATE HOSPITAL SET
+					HOSPITAL_NAME                   =            #hospital_name#      
+					,HOSPITAL_ADDR                  =            #hospital_addr#      
+					,HOSPITAL_PHONE                 =            #hospital_phone#     
+					,HOSPITAL_FAX                   =            #hospital_fax#       
+					,HOSPITAL_MAIL                  =            #hospital_mail#      
+					,HOSPITAL_DR_NAME               =            #hospital_dr_name#   
+					,HOSPITAL_AGP_CODE              =            #hospital_agp_code#  
+					,HOSPITAL_LICENSE               =            #hospital_license#   
+			WHERE  HOSPITAL_CODE = #hospital_code#
+		</update>
+		
+		
+		
+</sqlMap>

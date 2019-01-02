@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<!-- 게시판 테이블 데이터 맵핑 -->    
+<sqlMap namespace="imageboard">
+
+	<typeAlias alias="imageboardVO" type="com.ai.fishdr.vo.BoardVO"/>
+	<typeAlias alias="imageboardCommentVO" type="com.ai.fishdr.vo.BoardCommentVO"/>
+	
+	<sql id="selectAll">
+		SELECT B.BO_NO
+		    ,B.BO_TITLE
+		    ,B.BOARD_CODE 
+            ,B.BO_CONTENT
+		    ,B.BO_GOOD_HIT
+		    ,B.BO_HIT
+		    ,TO_CHAR(BO_REG_DATE,'YY/MM/DD HH24:MI')BO_REG_DATE
+		    ,BO_WRITER
+		    ,M.MEM_NICKNAME 
+		    ,F.FILE_SAVE_NAME
+		FROM BOARD B , MEMBER M, 
+		(select max(file_save_name) as file_save_name,bo_no from board_file group by bo_no) F
+		WHERE B.BO_WRITER = M.MEM_ID
+		    AND F.BO_NO = B.BO_NO
+		    AND B.BO_STATUS= 'y'
+		    AND B.BOARD_CODE = 'board003'
+		    <include refid="searchOption"/>
+     
+	</sql>
+	
+<!-- 	</sql> -->
+	
+	<sql id="searchOption">
+		<dynamic prepend="AND">
+			<isNotEmpty property="keyword">
+				<isEqual property="search" compareValue="TOTAL" open="(" close=")">
+					 B.BO_TITLE LIKE '%'||#keyword#||'%'
+					 OR B.BO_CONTENT LIKE '%'||#keyword#||'%'
+					 OR M.MEM_NICKNAME LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			
+			<isNotEmpty  property="keyword">
+				<isEqual property="search" compareValue="TITLE" >
+					 B.BO_TITLE LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			
+			<isNotEmpty  property="keyword">
+				<isEqual property="search" compareValue="CONTENT" >
+					 B.BO_CONTENT LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			
+			<isNotEmpty  property="keyword">
+				<isEqual property="search" compareValue="WRITER" >
+					 M.MEM_NICKNAME LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			
+		</dynamic>
+	</sql>
+	
+	<update id="updateBoard" parameterClass="imageboardVO">
+			UPDATE BOARD
+					SET  BO_TITLE = #bo_title#
+					    ,BO_CONTENT = #bo_content#
+					WHERE BO_NO = #bo_no#
+	
+	</update>
+	
+	<update id="deleteBBS" parameterClass="map">
+				UPDATE BOARD
+					SET BO_STATUS= 'n'
+				WHERE BO_NO = #bo_no#
+		
+	</update>
+	
+	
+	<select id="getBoardWriteList" parameterClass="map" resultClass="java.util.HashMap">
+ 			SELECT C.*
+				  FROM (SELECT ROWNUM RNUM, A.*
+						  FROM (<include refid="selectAll"/>
+						  ORDER BY B.BO_NO       ) A) C
+				 <![CDATA[
+				 WHERE C.RNUM <= #startCount#
+				 	AND C.RNUM >= #endCount#
+				 	]]>
+				 ORDER BY C.RNUM DESC
+	</select>
+	
+	<select id="getBBSInfo" parameterClass="map" resultClass="java.util.HashMap">
+			SELECT B.BO_NO
+		    ,B.BO_TITLE
+		    ,B.BOARD_CODE 
+		    ,B.BO_CONTENT
+		    ,B.BO_GOOD_HIT
+		    ,TO_CHAR(BO_REG_DATE,'YY/MM/DD HH24:MI')BO_REG_DATE
+		    ,BO_WRITER
+		    ,M.MEM_NICKNAME
+		    ,M.MEM_ID 
+		FROM BOARD B , MEMBER M
+		WHERE B.BO_WRITER = M.MEM_ID
+		    AND B.BO_STATUS= 'y'
+		    AND B.BOARD_CODE = 'board003'
+		    AND B.BO_NO = #bo_no#
+			
+	</select>
+	
+	<update id="updateHit" parameterClass="map">
+		UPDATE 
+			BOARD
+		SET
+			BO_HIT = BO_HIT+1
+		WHERE
+			BO_NO = #bo_no#
+		  AND BOARD_CODE = 'board003'	
+	</update>
+	
+	<insert id="insertBoardWrite" parameterClass="imageboardVO">
+		<selectKey keyProperty="bo_no" resultClass="String">
+			SELECT BOARD_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO	BOARD 
+			(BO_NO
+			,BOARD_CODE
+			,BO_TITLE
+			,BO_WRITER
+			,BO_CONTENT
+			)
+			VALUES
+			(#bo_no#
+			,'board003'
+			,#bo_title#
+			,#bo_writer#
+			,#bo_content#
+			)
+	</insert>
+	
+	<select id="getTotalCount" parameterClass="map" resultClass="int">
+		SELECT COUNT(B.BO_NO)
+			FROM BOARD B, MEMBER M
+			WHERE B.BO_WRITER = M.MEM_ID
+				AND B.BOARD_CODE = 'board003'
+				AND B.BO_STATUS= 'y'
+		<include refid="searchOption"/> 
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	<sql id="getAllComment">
+	    SELECT C.COMMENT_NO,M.MEM_NICKNAME
+	    	,C.COMMENT_STATUS
+	    	,TO_CHAR(C.COMMENT_REG_DATE,'YY/MM/DD HH24:MI')COMMENT_REG_DATE
+	    	,C.MEM_ID
+	    	,C.BO_NO
+	    	,C.COMMENT_CONTENT
+	    	,M.MEM_NAME
+			FROM BOARD_COMMENT C, MEMBER M
+			WHERE C.MEM_ID = M.MEM_ID
+				
+				AND C.COMMENT_STATUS = 'y'
+	</sql>
+	
+	<select id="getBoardComment" parameterClass="map" resultClass="java.util.HashMap">
+		SELECT C.*
+				  FROM (SELECT ROWNUM RNUM, A.* FROM(
+		  <include refid="getAllComment"/>
+				AND C.BO_NO= #bo_no#
+				ORDER BY C.COMMENT_REG_DATE) A) C
+				<![CDATA[
+					 WHERE C.RNUM >= #startCount# 
+				 	AND C.RNUM <=#endCount#
+				 	]]> 
+				 ORDER BY C.RNUM 
+	</select>
+	
+	<insert id="insertBoardComment" parameterClass="imageboardCommentVO">
+	<selectKey keyProperty="comment_no" resultClass="String">
+			SELECT BOARD_COMMENT_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO	BOARD_COMMENT 
+			(COMMENT_NO
+			,MEM_ID
+			,COMMENT_CONTENT
+			,BO_NO)
+			values
+			(#comment_no#
+			,#mem_id#
+			,#comment_content#
+			,#bo_no#
+			)
+	</insert>
+	
+	<update id="deleteBoardComment" parameterClass="map">
+		UPDATE BOARD_COMMENT
+		SET COMMENT_STATUS = 'n'
+		WHERE COMMENT_NO = #comment_no#
+	</update>
+	
+	<update id="updateBoardComment" parameterClass="map">
+		UPDATE BOARD_COMMENT
+		SET COMMENT_CONTENT = #comment_content#
+		WHERE COMMENT_NO = #comment_no#
+		    
+	</update>
+	
+	<select id="getBoardCommentInfo" parameterClass="String" resultClass="imageboardCommentVO">
+		SELECT COMMENT_NO
+			,TO_CHAR(COMMENT_REG_DATE,'YY/MM/DD HH24:MM')COMMENT_REG_DATE
+			,MEM_ID
+			,BO_NO
+			,COMMENT_CONTENT
+			FROM BOARD_COMMENT
+			WHERE COMMENT_NO = #comment_no#
+	</select>
+	
+	<select id="getCommendTotalcount" parameterClass="map" resultClass="int">
+		SELECT COUNT(B.COMMENT_NO)
+				FROM BOARD_COMMENT B, MEMBER M, BOARDMANAGE BM
+				WHERE B.MEM_ID = M.MEM_ID
+					AND BM.BOARD_CODE = 'board003'
+					AND B.BO_NO= #bo_no#
+					AND B.COMMENT_STATUS= 'y'
+	
+		
+	</select>
+	
+	<typeAlias alias="Sttemnt1" type="com.ai.fishdr.vo.SttemntVO" />
+	<insert id="insertBadHit" parameterClass="Sttemnt1">
+		INSERT INTO STTEMNT
+			VALUES (
+			STTEMNT_SEQ.NEXTVAL
+			,#mem_id#
+			,#bo_no#
+			,#reason#
+			)
+	</insert>
+	
+	
+	<update id="updateGoodHit" parameterClass="String">
+		UPDATE BOARD
+			SET  BO_GOOD_HIT = BO_GOOD_HIT+1
+          WHERE BO_NO = #bo_no#			
+	</update>
+	
+	<select id="getBlack" parameterClass="map" resultClass="int">
+		  SELECT  COUNT(S.MEM_ID)
+	 		 FROM BOARD B , STTEMNT S
+			  WHERE B.BO_NO = S.BO_NO
+	 		    AND B.BO_NO = #bo_no#
+	  		   AND S.MEM_ID= #mem_id#
+	</select>
+	
+	
+</sqlMap>

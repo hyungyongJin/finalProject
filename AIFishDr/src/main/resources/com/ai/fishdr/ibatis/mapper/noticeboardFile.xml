@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<!-- 게시판 테이블 데이터 맵핑 -->    
+<sqlMap namespace="noticeboardFile">
+
+	<typeAlias alias="noticeboardFileVO" type="com.ai.fishdr.vo.BoardFileVO"/>
+	
+</sqlMap>

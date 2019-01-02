@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="boardComment">
+
+	<typeAlias alias="boardCommentVO" type="com.ai.fishdr.vo.BoardCommentVO"/>
+	
+	<sql id="getAllComment">
+	    SELECT C.COMMENT_NO
+	    	,C.COMMENT_STATUS
+	    	,TO_CHAR(C.COMMENT_REG_DATE,'YY/MM/DD HH24:MI')COMMENT_REG_DATE
+	    	,C.MEM_ID
+	    	,C.BO_NO
+	    	,M.MEM_NICKNAME
+	    	,C.COMMENT_CONTENT
+	    	,M.MEM_NAME
+			FROM BOARD_COMMENT C, MEMBER M
+			WHERE C.MEM_ID = M.MEM_ID
+				AND C.COMMENT_STATUS = 'y'
+	</sql>
+	
+	<select id="getBoardComment" parameterClass="map" resultClass="java.util.HashMap">
+		   SELECT C.*
+				  FROM (SELECT ROWNUM RNUM, A.* FROM(
+		  <include refid="getAllComment"/>
+				AND C.BO_NO= #bo_no#
+				ORDER BY C.COMMENT_REG_DATE) A) C
+				WHERE 1=1
+				<dynamic>
+				<isNotEmpty prepend="AND" property="endCount">
+				 <![CDATA[
+					 C.RNUM <= #endCount#
+				 	]]>
+				</isNotEmpty>
+				<isNotEmpty prepend="AND" property="startCount">
+				 <![CDATA[
+				 	C.RNUM >=#startCount#
+				 	]]>
+				</isNotEmpty>
+				</dynamic>
+				 ORDER BY C.RNUM
+	</select>
+	
+	<insert id="insertBoardComment" parameterClass="boardCommentVO">
+	<selectKey keyProperty="comment_no" resultClass="String">
+			SELECT BOARD_COMMENT_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO	BOARD_COMMENT 
+			(COMMENT_NO
+			,MEM_ID
+			,COMMENT_CONTENT
+			,BO_NO)
+			values
+			(#comment_no#
+			,#mem_id#
+			,#comment_content#
+			,#bo_no#
+			)
+	</insert>
+	
+	<update id="deleteBoardComment" parameterClass="map">
+		UPDATE BOARD_COMMENT
+		SET COMMENT_STATUS = 'n'
+		WHERE COMMENT_NO = #comment_no#
+	</update>
+	
+	<select id="getBoardCommentInfo" parameterClass="String" resultClass="boardCommentVO">
+		SELECT COMMENT_NO
+			,TO_CHAR(COMMENT_REG_DATE,'YY/MM/DD HH24:MI')COMMENT_REG_DATE
+			,MEM_ID
+			,BO_NO
+			,COMMENT_CONTENT
+			FROM BOARD_COMMENT
+			WHERE COMMENT_NO = #comment_no#
+				AND COMMENT_STATUS = 'y'
+	</select>
+		
+	<select id="getTotalCount" parameterClass="String" resultClass="int">
+		SELECT COUNT(*)
+			FROM BOARD_COMMENT
+			WHERE BO_NO = #bo_no#
+				AND COMMENT_STATUS = 'y'
+	</select>	
+		
+	<update id="updateBoardComment" parameterClass="boardCommentVO">
+		UPDATE BOARD_COMMENT
+			SET COMMENT_CONTENT = #comment_content#
+			WHERE COMMENT_NO = #comment_no#
+	</update>	
+		
+</sqlMap>

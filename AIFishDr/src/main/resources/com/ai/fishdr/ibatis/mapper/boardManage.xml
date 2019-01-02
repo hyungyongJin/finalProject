@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="boardManage">
+
+	<typeAlias alias="boardMVO" type="com.ai.fishdr.vo.BoardManageVO"/>
+		
+		<select id="getBoardList" resultClass="boardMVO">
+			SELECT BOARD_CODE
+				,BOARD_NAME
+				,BOARD_ENG_NAME
+				,BOARD_FUNCTION
+				,BOARD_STATUS
+				,BOARD_FUNCTION2
+				FROM BOARDMANAGE
+				WHERE BOARD_STATUS = 'y'
+		</select>
+		
+		<select id="getBoardInfo" parameterClass="map" resultClass="boardMVO">
+			SELECT BOARD_CODE
+				,BOARD_NAME
+				,BOARD_ENG_NAME
+				,BOARD_FUNCTION
+				,BOARD_STATUS
+				,BOARD_FUNCTION2
+				FROM BOARDMANAGE
+					WHERE BOARD_STATUS ='y'
+				<dynamic prepend="AND">
+					<isNotEmpty property="board_code">
+						BOARD_CODE = #board_code#	
+					</isNotEmpty>
+				</dynamic>
+				<dynamic prepend="AND" open="(" close=")">
+					<isNotEmpty property="board_name" >
+						BOARD_NAME = #board_name#
+					</isNotEmpty>
+					<isNotEmpty property="board_eng_name" >
+						OR BOARD_ENG_NAME = #board_eng_name#
+					</isNotEmpty>
+				</dynamic>				
+		</select>
+		
+		
+		<update id="deleteBoard" parameterClass="string">
+			UPDATE BOARDMANAGE
+				SET BOARD_STATUS = 'n'
+				WHERE BOARD_CODE = #board_code#
+		</update>
+		
+		<insert id="insertBoard" parameterClass="boardMVO">
+			<selectKey keyProperty="board_code">
+				SELECT	'board'||TRIM(TO_CHAR((SELECT COUNT(BOARD_CODE)+1 FROM BOARDMANAGE),'000'))	AS board_code FROM DUAL
+			</selectKey>
+			INSERT INTO BOARDMANAGE
+				(BOARD_CODE
+				, BOARD_NAME
+				, BOARD_ENG_NAME
+				, BOARD_FUNCTION
+				, BOARD_FUNCTION2
+				)
+				 VALUES 
+				(
+				 #board_code#
+				,#board_name#
+				,#board_eng_name#
+				,#board_function#
+				,#board_function2#
+				)
+				<selectKey keyProperty="board_code" resultClass="String">
+					SELECT BOARD_CODE
+		    		  FROM BOARDMANAGE
+		     		WHERE BOARD_CODE = #board_code#
+				</selectKey>
+				
+		</insert>
+		<update id="updateBoard" parameterClass="boardMVO">
+			UPDATE BOARDMANAGE
+				SET	BOARD_NAME = #board_name#
+					<dynamic>
+						<isNotEmpty  prepend="," property="board_eng_name">
+							BOARD_ENG_NAME = #board_eng_name#
+						</isNotEmpty>
+						<isNotEmpty  prepend="," property="board_function">
+							BOARD_FUNCTION = #board_function#
+						</isNotEmpty>
+						<isNotEmpty  prepend="," property="board_function2">
+							BOARD_FUNCTION2 = #board_function2#
+						</isNotEmpty>
+					</dynamic>
+				WHERE BOARD_CODE = #board_code# 
+			
+		</update>
+		
+		
+</sqlMap>

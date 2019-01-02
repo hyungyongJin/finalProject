@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="dissFish">
+
+	<typeAlias alias="dissFishVO" type="com.ai.fishdr.vo.DissFishVO"/>
+	
+	<sql id="selectAll">
+		 SELECT 
+		 	A.*,B.FISH_NAME,C.DISS_NAME
+		 FROM 
+		 	DISS_FISH A,FISH B, DISEASE C
+		 WHERE 
+		 	A.DISS_CODE = C.DISS_CODE
+	       	AND A.FISH_CODE = B.FISH_CODE
+	</sql>
+	
+	<sql id="search">
+		<dynamic prepend="AND">
+			<isNotEmpty property="search_keyword">
+				<isEqual  property="search_keycode"  compareValue="TOTAL" open="(" close=")">
+						B.FISH_NAME LIKE '%'||#search_keyword#||'%'
+					OR	C.DISS_NAME LIKE '%'||#search_keyword#||'%'
+				</isEqual>
+				<isEqual property="search_keycode" compareValue="FISH_NAME">
+					B.FISH_NAME LIKE '%'||#search_keyword#||'%'
+				</isEqual>
+				<isEqual property="search_keycode" compareValue="DISS_NAME">
+					C.DISS_NAME LIKE '%'||#search_keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	
+	<select id="diss_fish_List" parameterClass="map" resultClass="dissFishVO">
+		SELECT
+			B.*
+		FROM
+			(SELECT ROWNUM RNUM, A.* FROM(
+			 <include refid="selectAll"/>
+	       	 <include refid="search"/>
+			 ORDER BY TO_NUMBER(SUBSTR(A.DF_CODE,3)) ASC) A)B
+		<![CDATA[
+   		WHERE
+   			B.RNUM <= #startCount#
+   			AND B.RNUM >= #endCount#
+		]]>	
+		ORDER BY B.RNUM DESC
+	</select>
+	
+	<select id="totalCount" parameterClass="map" resultClass="int">
+		 SELECT 
+		 	COUNT(A.DF_CODE)
+		 FROM 
+		 	DISS_FISH A,FISH B, DISEASE C
+		 WHERE 
+		 	A.DISS_CODE = C.DISS_CODE
+	       	AND A.FISH_CODE = B.FISH_CODE
+	       	<include refid="search"/>
+	</select>
+	
+	<insert id="diss_fish_Insert" parameterClass="map">
+		INSERT INTO DISS_FISH
+			(DF_CODE
+			,DISS_CODE
+			,FISH_CODE)
+		VALUES
+			('df'||DISS_FISH_SEQ.NEXTVAL
+			,#diss_code#
+			,#fish_code#)
+	</insert>
+	
+	<select id="duplicationCheck" parameterClass="map" resultClass="dissFishVO">
+		SELECT 
+			*
+		FROM
+			DISS_FISH
+		WHERE
+			DISS_CODE = #diss_code#
+			AND FISH_CODE = #fish_code#
+	</select>
+	
+	<delete id="diss_fish_Delete" parameterClass="String">
+		DELETE
+		FROM
+			DISS_FISH
+		WHERE
+			DF_CODE = #df_code#
+	</delete>
+	
+	<select id="diss_fish_Info" parameterClass="String" resultClass="dissFishVO">
+		<include refid="selectAll"/>
+		AND A.DF_CODE = #df_code#
+	</select>
+	
+	<update id="diss_fish_Update" parameterClass="map">
+		UPDATE
+			DISS_FISH
+		SET
+			DISS_CODE = #diss_code#
+			,FISH_CODE = #fish_code#
+		WHERE
+			DF_CODE = #df_code# 
+	</update>
+	
+</sqlMap>

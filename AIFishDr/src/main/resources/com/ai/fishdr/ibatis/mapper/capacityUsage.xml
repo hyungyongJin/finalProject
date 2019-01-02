@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="capacity">
+
+	<typeAlias alias="capacityVO" type="com.ai.fishdr.vo.CapacityUsageVO"/>
+	
+	<sql id="selectAll">
+		SELECT 
+			A.*,B.FISH_NAME,C.MDCIN_PRDUCT_NAME
+		FROM
+			CAPACITY_USAGE A, FISH B, MEDICINE C
+		WHERE
+			A.FISH_CODE = B.FISH_CODE
+			AND A.MDCIN_CODE = C.MDCIN_CODE
+			AND A.USCP_STATUS = 'y'
+	</sql>
+	
+	<sql id="search">
+		<dynamic prepend="AND">
+			<isNotEmpty property="keyword">
+					<isEqual property="search" compareValue="TOTAL" open="(" close=")">
+						B.FISH_NAME LIKE '%'||#keyword#||'%'
+						OR C.MDCIN_PRDUCT_NAME LIKE '%'||#keyword#||'%'
+					</isEqual>
+				</isNotEmpty>
+				
+				<isNotEmpty property="keyword">
+					<isEqual property="search" compareValue="FISH_NAME">
+						B.FISH_NAME LIKE '%' || #keyword# || '%'
+					</isEqual>
+				</isNotEmpty>
+				
+				<isNotEmpty property="keyword">
+					<isEqual property="search" compareValue="MDCIN_PRDUCT_NAME">
+						C.MDCIN_PRDUCT_NAME LIKE '%' || #keyword# || '%'
+					</isEqual>
+				</isNotEmpty>
+			
+		</dynamic>
+	</sql>
+	
+	<select id="getCapacityList" parameterClass="map" resultClass="capacityVO">
+			SELECT
+				B.*
+				FROM
+					(SELECT ROWNUM RNUM, A.*
+					   FROM (<include refid="selectAll"/>
+					   		 <include refid="search"/>
+					   		 ORDER BY TO_NUMBER(SUBSTR(USCP_CODE,5)) ASC) A) B
+					   	<![CDATA[
+					   		WHERE  
+	 	 				   		B.RNUM <= #startCount#  
+					   			AND B.RNUM >= #endCount# 
+						]]>	
+					ORDER BY B.RNUM DESC
+	</select>
+	
+	<select id="getInfo" parameterClass="map" resultClass="capacityVO">
+		<include refid="selectAll"/>
+		AND A.USCP_CODE = #uscp_code#
+	</select>
+	
+	<select id="getTotalCount" parameterClass="map" resultClass="int">
+		SELECT 
+			COUNT(A.USCP_CODE)
+		FROM
+			CAPACITY_USAGE A, FISH B, MEDICINE C
+		WHERE
+			A.FISH_CODE = B.FISH_CODE
+			AND A.MDCIN_CODE = C.MDCIN_CODE
+			AND A.USCP_STATUS = 'y'
+			<include refid="search"/>
+	</select>
+	
+	<insert id="capacityInsert" parameterClass="map">
+			INSERT INTO CAPACITY_USAGE
+			(USCP_CODE
+			,USCP_CONTENT
+			,FISH_CODE
+			,MDCIN_CODE)
+		VALUES
+			('uscp'||CAPACITY_USAGE_SEQ.NEXTVAL
+			,#uscp_content#
+			,#fish_code#
+			,#mdcin_code#)
+	</insert>
+	
+	<update id="capacityUpdate" parameterClass="map">
+		UPDATE CAPACITY_USAGE
+		SET  USCP_CONTENT = #uscp_content# 
+			<dynamic>
+			  <isNotEmpty prepend="," property="mdcin_code">
+			   	MDCIN_CODE = #mdcin_code#
+			  </isNotEmpty>
+			  <isNotEmpty prepend="," property="fish_code">
+				 FISH_CODE = #fish_code#
+			  </isNotEmpty>
+			</dynamic>
+		WHERE  USCP_CODE = #uscp_code#
+	</update>
+	
+	<update id="capacityDelete" parameterClass="map">
+		UPDATE CAPACITY_USAGE
+			SET USCP_STATUS='n'
+		WHERE USCP_CODE = #uscp_code#
+	</update>
+	
+	<select id="capacityCheck" parameterClass="map" resultClass="capacityVO">
+			SELECT 
+				*
+			FROM
+				CAPACITY_USAGE
+			WHERE
+				FISH_CODE = #fish_code#
+				AND MDCIN_CODE = #mdcin_code#
+				AND USCP_STATUS = 'y'
+	</select>
+	
+	<select id="prsCapacityInfo" parameterClass="map" resultClass="capacityVO">
+		SELECT
+		    A.*
+		FROM
+		    CAPACITY_USAGE A,(SELECT FISH_CODE 
+		                        FROM FISH 
+		                       WHERE FISH_NAME = #fish_name#) B
+		WHERE
+		    A.FISH_CODE = B.FISH_CODE
+		    AND A.MDCIN_CODE = #mdcin_code#
+	</select>
+	
+</sqlMap>

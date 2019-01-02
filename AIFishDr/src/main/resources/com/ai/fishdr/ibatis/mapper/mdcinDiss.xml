@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+     PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"   
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "mdcinDiss">
+
+	<typeAlias alias="mdcinDissVO" type="com.ai.fishdr.vo.MdcinDissVO"/>
+	
+	<sql id="selectAll">
+		 SELECT 
+		 	A.*,B.MDCIN_PRDUCT_NAME,C.DISS_NAME
+		 FROM 
+		 	MDCIN_DISS A,MEDICINE B, DISEASE C
+		 WHERE 
+		 	A.DISS_CODE = C.DISS_CODE
+	       	AND A.MDCIN_CODE = B.MDCIN_CODE
+	</sql>
+	
+	<sql id="search">
+		<dynamic prepend="AND">
+			<isNotEmpty property="search_keyword">
+				<isEqual  property="search_keycode"  compareValue="TOTAL" open="(" close=")">
+						B.MDCIN_PRDUCT_NAME LIKE '%'||#search_keyword#||'%'
+					OR	C.DISS_NAME LIKE '%'||#search_keyword#||'%'
+				</isEqual>
+				<isEqual property="search_keycode" compareValue="MDCIN_NAME">
+					B.MDCIN_PRDUCT_NAME LIKE '%'||#search_keyword#||'%'
+				</isEqual>
+				<isEqual property="search_keycode" compareValue="DISS_NAME">
+					C.DISS_NAME LIKE '%'||#search_keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	
+	<select id="mdcin_diss_List" parameterClass="map" resultClass="mdcinDissVO">
+		SELECT
+			B.*
+		FROM
+			(SELECT ROWNUM RNUM, A.* FROM(
+			 <include refid="selectAll"/>
+	       	 <include refid="search"/>
+			 ORDER BY TO_NUMBER(SUBSTR(A.MD_CODE,3)) ASC) A)B
+		<![CDATA[
+    		WHERE 
+    			B.RNUM <= #startCount# 
+    			AND B.RNUM >= #endCount# 
+ 		]]>	 
+		ORDER BY B.RNUM DESC
+	</select>
+	
+	<select id="totalCount" parameterClass="map" resultClass="int">
+		 SELECT 
+		 	COUNT(A.MD_CODE)
+		 FROM 
+		 	MDCIN_DISS A,MEDICINE B, DISEASE C
+		 WHERE 
+		 	A.DISS_CODE = C.DISS_CODE
+	       	AND A.MDCIN_CODE = B.MDCIN_CODE
+	       	<include refid="search"/>
+	</select>
+	
+	<insert id="mdcin_diss_Insert" parameterClass="map">
+		INSERT INTO MDCIN_DISS
+			(MD_CODE
+			,DISS_CODE
+			,MDCIN_CODE)
+		VALUES
+			('md'||MDCIN_DISS_SEQ.NEXTVAL
+			,#diss_code#
+			,#mdcin_code#)
+	</insert>
+	
+	<select id="duplicationCheck" parameterClass="map" resultClass="mdcinDissVO">
+		SELECT 
+			*
+		FROM
+			MDCIN_DISS
+		WHERE
+			DISS_CODE = #diss_code#
+			AND MDCIN_CODE = #mdcin_code#
+	</select>
+	
+	<delete id="mdcin_diss_Delete" parameterClass="String">
+		DELETE
+		FROM
+			MDCIN_DISS
+		WHERE
+			MD_CODE = #md_code#
+	</delete>
+	
+	<select id="mdcin_diss_Info" parameterClass="String" resultClass="mdcinDissVO">
+		<include refid="selectAll"/>
+		AND A.MD_CODE = #md_code#
+	</select>
+	
+	<update id="mdcin_diss_Update" parameterClass="map">
+		UPDATE
+			MDCIN_DISS
+		SET
+			DISS_CODE = #diss_code#
+			,MDCIN_CODE = #mdcin_code#
+		WHERE
+			MD_CODE = #md_code# 
+	</update>
+	
+	<select id="getMdcinCode" parameterClass="String" resultClass="mdcinDissVO" >
+		SELECT
+			MDCIN_CODE
+		FROM
+			MDCIN_DISS
+		WHERE
+			DISS_CODE = #diss_code#
+	</select>	
+	
+</sqlMap>

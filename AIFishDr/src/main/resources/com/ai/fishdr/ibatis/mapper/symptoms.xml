@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="symptms">
+
+	<typeAlias alias="symptmsVO" type="com.ai.fishdr.vo.SymptomsVO"/>
+	
+	<sql id="selectAll">
+		SELECT
+			*
+		FROM
+			SYMPTOMS
+		WHERE
+			SYMPTMS_STATUS = 'y'
+	</sql>	
+	
+	<sql id="search">
+		<dynamic prepend="AND">
+			<isNotEmpty prepend="search_keyword">
+				SYMPTMS_CONTENT LIKE '%' || #search_keyword# || '%'
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	
+	
+	<select id="prsSymptmsList" parameterClass="map" resultClass="symptmsVO">
+		SELECT 
+   			A.SYMPTMS_CONTENT
+		FROM 
+    		SYMPTOMS A,(SELECT SYMPTMS_CODE 
+    		              FROM SYMPTMS_DISS A, (SELECT A.DISS_CODE 
+    		                                      FROM DISS_FISH A, (SELECT FISH_CODE 
+    		                                                           FROM FISH 
+    		                                                          WHERE FISH_NAME = #fish_name#) B 
+    		                                     WHERE A.FISH_CODE = B.FISH_CODE) B 
+    		             WHERE A.DISS_CODE = B.DISS_CODE) B
+		WHERE
+    		A.SYMPTMS_CODE = B.SYMPTMS_CODE
+	</select>
+	
+	<select id="symptmsList" resultClass="symptmsVO">
+		<include refid="selectAll"/>
+	</select>
+	
+	<select id="getSymptmsList" parameterClass="map" resultClass="symptmsVO">
+		SELECT
+			B.*
+		FROM
+			(SELECT ROWNUM RNUM, A.*
+			   FROM (<include refid="selectAll"/>
+			   		 <include refid="search"/>
+			   		 ORDER BY TO_NUMBER(SUBSTR(SYMPTMS_CODE,8)) ASC) A) B
+   		<![CDATA[
+   		WHERE
+   			B.RNUM <= #startCount#
+   			AND B.RNUM >= #endCount#
+		]]>	
+		ORDER BY B.RNUM DESC
+	</select>
+	
+	<select id="totalCount" parameterClass="map" resultClass="int">
+		SELECT
+			COUNT(SYMPTMS_CODE)
+		FROM
+			SYMPTOMS
+		WHERE
+			SYMPTMS_STATUS = 'y'
+			<include refid="search"/>
+	</select>
+	
+	<update id="deleteSymptms" parameterClass="String">
+		UPDATE
+			SYMPTOMS
+		SET
+			SYMPTMS_STATUS = 'n'
+		WHERE
+			SYMPTMS_CODE = #symptms_code#
+	</update>
+	
+	<insert id="insertSymptms" parameterClass="String">
+		INSERT INTO SYMPTOMS
+			(SYMPTMS_CODE
+			,SYMPTMS_CONTENT)
+		VALUES
+			('symptms'||SYMTOMS_SEQ.NEXTVAL
+			,#symptms_content#)
+				
+	</insert>
+	
+	<select id="symptmsInfo" parameterClass="map" resultClass="symptmsVO">
+		<include refid="selectAll"/>
+		AND SYMPTMS_CODE = #symptms_code#
+	</select>
+	
+	<select id="duplicationCheck" parameterClass="String" resultClass="symptmsVO">
+		<include refid="selectAll"/>
+		AND DBMS_LOB.COMPARE(SYMPTMS_CONTENT,#symptms_content#) = 0
+	</select>
+	
+	<update id="updateSymptms" parameterClass="map">
+		UPDATE
+			SYMPTOMS
+		SET
+			SYMPTMS_CONTENT = #symptms_content#
+		WHERE
+			SYMPTMS_CODE = TRIM(#symptms_code#)
+	</update>	
+	
+	
+</sqlMap>

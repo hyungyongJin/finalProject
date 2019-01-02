@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "mdcinPrscrptn">
+
+	<typeAlias alias="mdcinPrscrptnVO" type="com.ai.fishdr.vo.MdcinPrscrptnVO"/>
+	
+	<insert id="mdcinPrscrptnInsert" parameterClass="map">
+		INSERT INTO MDCIN_PRSCRPTN
+					(MDCIN_CODE
+					,PRSCRPTN_CODE)
+			  VALUES(#mdcin_code#
+			  		,#prscrptn_code#)
+	</insert>
+	
+	<select id="getMdcinCode" parameterClass="String" resultClass="mdcinPrscrptnVO">
+		SELECT
+			*
+		FROM
+	 		MDCIN_PRSCRPTN
+ 		WHERE
+ 			PRSCRPTN_CODE = #prscrptn_code#
+	</select>
+		
+</sqlMap>

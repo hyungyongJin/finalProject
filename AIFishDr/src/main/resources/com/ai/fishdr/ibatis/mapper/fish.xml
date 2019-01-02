@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "fish">
+
+	<typeAlias alias="fishVO" type="com.ai.fishdr.vo.FishVO"/>
+	
+	<sql id="selectAll">
+		SELECT
+			*
+		FROM
+			FISH
+		WHERE
+			FISH_STATUS = 'y'
+	</sql>	
+	
+	<sql id="search">
+		<dynamic prepend="AND">
+			<isNotEmpty property="search_keyword">
+				FISH_NAME LIKE '%' || #search_keyword# || '%'
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	
+	<select id="fishList" resultClass="fishVO">
+		<include refid="selectAll"/>
+	</select>
+	
+	<select id="getFishList" parameterClass="map" resultClass="fishVO">
+		SELECT
+			B.*
+		FROM
+			(SELECT ROWNUM RNUM, A.*
+			   FROM (<include refid="selectAll"/>
+			   		 <include refid="search"/>
+			   		 ORDER BY TO_NUMBER(SUBSTR(FISH_CODE,2)) ASC) A) B
+   		<![CDATA[
+   		WHERE
+   			B.RNUM <= #startCount#
+   			AND B.RNUM >= #endCount#
+		]]>	
+		ORDER BY B.RNUM DESC
+	</select>
+	
+	<select id="totalCount" parameterClass="map" resultClass="int">
+		SELECT
+			COUNT(FISH_CODE)
+		FROM
+			FISH
+		WHERE
+			FISH_STATUS = 'y'
+			<include refid="search"/>
+	</select>
+	
+	<update id="deleteFish" parameterClass="String">
+		UPDATE
+			FISH
+		SET
+			FISH_STATUS = 'n'
+		WHERE
+			FISH_CODE = #fish_code#
+	</update>
+	
+	<insert id="insertFish" parameterClass="String">
+		INSERT INTO FISH
+			(FISH_CODE
+			,FISH_NAME)
+		VALUES
+			
+			('f'||FISH_SEQ.NEXTVAL
+			,#fish_name#)
+				
+	</insert>
+	
+	<select id="fishInfo" parameterClass="map" resultClass="fishVO">
+		<include refid="selectAll"/>
+		<dynamic prepend="AND">
+			<isNotEmpty property="fish_code">
+				FISH_CODE = #fish_code#
+			</isNotEmpty>
+			<isEmpty property="fish_code">
+				<isNotEmpty property="fish_name">
+					FISH_NAME = #fish_name#
+				</isNotEmpty>
+			</isEmpty>
+		</dynamic>
+	</select>
+	
+	<select id="duplicationCheck" parameterClass="String" resultClass="fishVO">
+		<include refid="selectAll"/>
+		AND FISH_NAME = #fish_name#
+	</select>
+	
+	<update id="updateFish" parameterClass="map">
+		UPDATE
+			FISH
+		SET
+			FISH_NAME = #fish_name#
+		WHERE
+			FISH_CODE = TRIM(#fish_code#)
+	</update>
+</sqlMap>

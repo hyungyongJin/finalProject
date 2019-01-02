@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<!-- 게시판 테이블 데이터 맵핑 -->    
+<sqlMap namespace="board">
+	<typeAlias alias="boardVO" type="com.ai.fishdr.vo.BoardVO"/>
+	
+	
+	<sql id="selectAll">
+		SELECT B.BO_NO, B.BOARD_CODE, B.BO_TITLE, BO_CONTENT,
+			TO_CHAR(B.BO_REG_DATE,'YY/MM/DD HH24:MI') BO_REG_DATE,
+			B.BO_WRITER,
+			 M.MEM_NAME ,BM.BOARD_NAME
+			FROM BOARD B, MEMBER M, BOARDMANAGE BM
+			WHERE B.BO_WRITER = M.MEM_ID
+				AND BM.BOARD_CODE = B.BOARD_CODE
+				AND B.BO_STATUS= 'y'
+	</sql>
+	
+	<sql id="searchOption">
+		<dynamic prepend="AND">
+			<isNotEmpty property="keyword">
+						<isEqual property="search" compareValue="TOTAL" open="(" close=")">
+							 B.BO_TITLE LIKE '%'||#keyword#||'%'
+							 OR B.BO_TITLE LIKE '%'||#keyword#||'%'
+							 OR B.BO_CONTENT LIKE '%'||#keyword#||'%'
+							 OR M.MEM_NAME LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+					<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="TITLE" >
+							 B.BO_TITLE LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+					<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="CONTENT" >
+							 B.BO_CONTENT LIKE '%'||#keyword#||'%'
+						</isEqual>
+					</isNotEmpty>
+					<isNotEmpty  property="keyword">
+						<isEqual property="search" compareValue="WRITER" >
+							 M.MEM_NAME LIKE '%'||#keyword#||'%'
+						</isEqual>
+			</isNotEmpty>
+		</dynamic>
+		<dynamic>
+			<isNotEmpty prepend="AND" property="boardCategory">
+				B.BOARD_CODE = #boardCategory#
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	
+	<select id="getBoardWriteList" parameterClass="map" resultClass="java.util.HashMap">
+ 		 SELECT C.*
+				  FROM (SELECT ROWNUM RNUM, A.*
+						  FROM (<include refid="selectAll"/>
+						        <include refid="searchOption"/>
+						  ORDER BY BO_NO       ) A) C
+				 <![CDATA[
+				 WHERE C.RNUM <= #startCount#
+				 	AND C.RNUM >=#endCount#
+				 	]]>
+				 ORDER BY C.RNUM DESC
+	</select>
+	
+	<select id="getTotalCount" parameterClass="map" resultClass="int">
+		SELECT COUNT(B.BO_NO)
+			FROM BOARD B, MEMBER M, BOARDMANAGE BM
+			WHERE B.BO_WRITER = M.MEM_ID
+				AND BM.BOARD_CODE = B.BOARD_CODE
+				AND B.BO_STATUS= 'y'
+		<include refid="searchOption"/> 
+	</select>
+	
+	<insert id="insertBoardWrite" parameterClass="boardVO">
+		<selectKey keyProperty="bo_no" resultClass="String">
+			SELECT BOARD_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO	BOARD 
+			(BO_NO
+			,BOARD_CODE
+			,BO_TITLE
+			,BO_WRITER
+			,BO_CONTENT
+			,BO_STATUS
+			)
+			VALUES
+			(#bo_no#
+			,#board_code#
+			,#bo_title#
+			,#bo_writer#
+			,#bo_content#
+			<dynamic>
+				<isNotEmpty prepend="," property="bo_status">
+					#bo_status#
+				</isNotEmpty>
+				<isEmpty prepend="," property="bo_status">
+					'y'
+				</isEmpty>
+			</dynamic>
+			)
+	</insert>
+	
+	<select id="getBoardWriteInfo" parameterClass="map" resultClass="java.util.HashMap">
+		SELECT B.BO_NO
+			,B.BO_TITLE
+			,B.BO_GOOD_HIT
+			,TO_CHAR(BO_REG_DATE,'YY/MM/DD HH24:MI') BO_REG_DATE
+			,B.BO_WRITER
+			,B.BOARD_CODE
+			,B.BO_CONTENT
+			,M.MEM_NAME, M.MEM_NICKNAME, BF.BOARD_NAME
+		FROM BOARD B, MEMBER M  , BOARDMANAGE BF 
+		WHERE  B.BO_WRITER = M.MEM_ID
+			AND B.BOARD_CODE = BF.BOARD_CODE
+			AND B.BO_NO = #bo_no#
+	</select>
+	
+	<update id="deleteBoardWrite" parameterClass="String">
+		UPDATE BOARD
+			SET BO_STATUS  = 'n'
+			WHERE BO_NO = #bo_no#
+	</update>
+	
+	<update id="updateBoardWrite" parameterClass="boardVO">
+		UPDATE BOARD
+			SET BO_TITLE = #bo_title#
+			   ,BO_CONTENT = #bo_content#
+			WHERE BO_NO = #bo_no#
+	</update>
+	
+	<sql id="allBlackList">
+		SELECT B.BO_NO
+				,G.BOARD_NAME
+				,B.BO_TITLE
+				,M.MEM_NAME 
+				,TO_CHAR(B.BO_REG_DATE,'YY/MM/DD HH24:MI')AS BO_REG_DATE
+				,COUNT(S.REASON) AS REASON
+				FROM BOARD B, MEMBER M, STTEMNT S, BOARDMANAGE G
+				WHERE S.BO_NO = B.BO_NO
+				    AND B.BO_WRITER = M.MEM_ID
+				    AND G.BOARD_CODE = B.BOARD_CODE
+				    AND B.BO_STATUS = 'y'
+	</sql>
+	<select id="getBlackWriteList" parameterClass="map" resultClass="java.util.HashMap">
+		 SELECT C.*
+				  FROM (SELECT ROWNUM RNUM, A.*
+						  FROM (<include refid="allBlackList"/>
+						        <include refid="searchOption"/>
+						        GROUP BY B.BO_NO
+						         ,G.BOARD_NAME
+						   		 ,B.BO_TITLE
+						   		 ,M.MEM_NAME
+						   		 ,BO_REG_DATE
+						  ORDER BY B.BO_NO       ) A) C
+				 <![CDATA[
+				 WHERE C.RNUM <= #startCount#
+				 	AND C.RNUM >=#endCount#
+				 	]]>
+				 ORDER BY C.RNUM DESC
+	</select>
+	<select id="getBlackTotalCount" parameterClass="map" resultClass="int">
+		    SELECT COUNT(DISTINCT(B.BO_NO))
+				FROM BOARD B, MEMBER M, STTEMNT S
+				WHERE S.BO_NO = B.BO_NO
+				    AND B.BO_WRITER = M.MEM_ID
+				    <include refid="searchOption"/>
+	</select>
+	<select id="getBlackReason" parameterClass="String" resultClass="java.util.HashMap">
+		 SELECT DISTINCT(REASON), COUNT(STTEMNT_CODE) AS COUNT
+	         FROM STTEMNT
+	         WHERE BO_NO = #bo_no#
+	         GROUP BY REASON
+	</select>
+	
+	
+	<sql id="prsDissSearch">
+		<dynamic prepend="WHERE">
+			<isNotEmpty property="search">
+				A.DISS_NAME LIKE '%'||#search#||'%'
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	<sql id="option">
+		<dynamic prepend="HAVING">
+			<isNotEmpty property="cnt">
+			<![CDATA[
+				COUNT(A.PRSCRPTN_CODE) >= #cnt#
+			]]>	
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	<select id="getListOfMemesPrscrptn" parameterClass="map" resultClass="java.util.HashMap">
+		SELECT C.* FROM(SELECT ROWNUM RNUM, B.* FROM
+				(SELECT A.DISS_NAME, COUNT(A.PRSCRPTN_CODE)AS COUNT FROM( SELECT MAX(D.DISS_NAME)AS DISS_NAME,
+			      MP.PRSCRPTN_CODE FROM MDCIN_PRSCRPTN MP ,  MDCIN_DISS MD, DISEASE D
+			      WHERE MP.MDCIN_CODE = MD.MDCIN_CODE
+			        AND D.DISS_CODE = MD.DISS_CODE
+			      GROUP BY MP.PRSCRPTN_CODE)A
+			      <include refid="prsDissSearch"/>
+			      GROUP BY DISS_NAME
+			      <include refid="option"/>
+			      ORDER BY COUNT DESC  )B)C
+		 	  <![CDATA[
+		  WHERE C.RNUM <= #startCount#
+				 	AND C.RNUM >=#endCount#
+				  ]]>
+			</select>
+	<select id="getListOfMemesPrscrptnCnt" parameterClass="map" resultClass="int">
+		     SELECT COUNT(B.DISS_NAME) AS COUNT
+  				 FROM( SELECT A.DISS_NAME, COUNT(A.PRSCRPTN_CODE)AS COUNT FROM( SELECT MAX(D.DISS_NAME)AS DISS_NAME,
+			      MP.PRSCRPTN_CODE FROM MDCIN_PRSCRPTN MP ,  MDCIN_DISS MD, DISEASE D
+			      WHERE MP.MDCIN_CODE = MD.MDCIN_CODE
+			        AND D.DISS_CODE = MD.DISS_CODE
+			      GROUP BY MP.PRSCRPTN_CODE)A
+			       <include refid="prsDissSearch"/>
+			      GROUP BY DISS_NAME
+                   <include refid="option"/>)B
+	</select>
+</sqlMap>

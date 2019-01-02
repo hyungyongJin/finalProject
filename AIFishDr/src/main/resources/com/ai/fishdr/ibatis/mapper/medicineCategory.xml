@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "medicineCategory">
+
+	<typeAlias alias="mdcinCategoryVO" type="com.ai.fishdr.vo.MedicineCategoryVO"/>
+	
+	<select id="getMdcinCategoryList" resultClass="mdcinCategoryVO">
+		SELECT 
+			*
+		FROM
+			MEDICINE_CATEGORY
+	</select>	
+	
+	<select id="getMdcinCategoryInfo" parameterClass="map" resultClass="mdcinCategoryVO">
+		SELECT 
+			*
+		FROM
+			MEDICINE_CATEGORY
+		WHERE
+			CTGRY_CODE = #ctgry_code#
+			
+	
+	</select>
+</sqlMap>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="diss">
+
+	<typeAlias alias="diseaseVO" type="com.ai.fishdr.vo.DiseaseVO"/>
+	
+	<sql id="selectAll">
+		SELECT
+			*
+		FROM
+			DISEASE
+		WHERE
+			DISS_STATUS = 'y'
+	</sql>	
+	
+	<sql id="search">
+		<dynamic prepend="AND">
+			<isNotEmpty prepend="search_keyword">
+				DISS_NAME LIKE '%' || #search_keyword# || '%'
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	
+	<select id="dissList" resultClass="diseaseVO">
+		<include refid="selectAll"/>
+	</select>
+	
+	<select id="getDiseaseList" parameterClass="map" resultClass="diseaseVO">
+		SELECT
+			B.*
+		FROM
+			(SELECT ROWNUM RNUM, A.*
+			   FROM (<include refid="selectAll"/>
+			   		 <include refid="search"/>
+			   		 ORDER BY TO_NUMBER(SUBSTR(DISS_CODE,2)) ASC) A) B
+   		<![CDATA[
+   		WHERE
+   			B.RNUM <= #startCount#
+   			AND B.RNUM >= #endCount#
+		]]>	
+		ORDER BY B.RNUM DESC
+	</select>
+	
+	<select id="totalCount" parameterClass="map" resultClass="int">
+		SELECT
+			COUNT(DISS_CODE)
+		FROM
+			DISEASE
+		WHERE
+			DISS_STATUS = 'y'
+			<include refid="search"/>
+	</select>
+	
+	<update id="deleteDisease" parameterClass="String">
+		UPDATE
+			DISEASE
+		SET
+			DISS_STATUS = 'n'
+		WHERE
+			DISS_CODE = #diss_code#
+	</update>
+	
+	<insert id="insertDisease" parameterClass="String">
+		INSERT INTO DISEASE
+			(DISS_CODE
+			,DISS_NAME)
+		VALUES
+			('d'||DISEASE_SEQ.NEXTVAL
+			,#diss_name#)
+				
+	</insert>
+	
+	<select id="diseaseInfo" parameterClass="map" resultClass="diseaseVO">
+		<include refid="selectAll"/>
+		AND DISS_CODE = #diss_code#
+	</select>
+	
+	<select id="duplicationCheck" parameterClass="String" resultClass="diseaseVO">
+		<include refid="selectAll"/>
+		AND DISS_NAME = #diss_name#
+	</select>
+	
+	<update id="updateDisease" parameterClass="map">
+		UPDATE
+			DISEASE
+		SET
+			DISS_NAME = #diss_name#
+		WHERE
+			DISS_CODE = TRIM(#diss_code#)
+	</update>	
+	
+	<select id="getDissCode" parameterClass="map" resultClass="diseaseVO">
+		SELECT
+		    C.*
+		FROM
+		    (SELECT A.DISS_CODE 
+		       FROM DISS_FISH A, (SELECT FISH_CODE 
+		                            FROM FISH 
+		                           WHERE FISH_NAME = #fish_name#) B 
+		      WHERE A.FISH_CODE = B.FISH_CODE) A, 
+		    (SELECT A.DISS_CODE 
+		       FROM SYMPTMS_DISS A, (SELECT SYMPTMS_CODE 
+		                               FROM SYMPTOMS 
+		                              WHERE SYMPTMS_CONTENT LIKE '%' || #symptms_content# || '%') B 
+		      WHERE A.SYMPTMS_CODE = B.SYMPTMS_CODE) B,
+		     DISEASE C
+		WHERE
+		    A.DISS_CODE = B.DISS_CODE
+		    AND C.DISS_CODE = B.DISS_CODE
+	</select>
+</sqlMap>

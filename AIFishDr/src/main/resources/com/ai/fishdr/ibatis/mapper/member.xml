@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="member">
+
+	<typeAlias alias="memberVO" type="com.ai.fishdr.vo.MemberVO"/>
+		
+	<sql id="selectAll">
+	
+		SELECT *
+		FROM   MEMBER
+		WHERE  MEM_STATUS = 'y'
+	
+	</sql>
+		
+	
+	<select id="memberInfo" parameterClass="map" resultClass="memberVO">
+		<include refid="selectAll" />
+		<dynamic>
+			<isNotEmpty property="mem_id" prepend="AND">
+				MEM_ID = #mem_id#
+			</isNotEmpty>
+			<isNotEmpty property="mem_pwd" prepend="AND">
+				MEM_PWD = #mem_pwd#
+			</isNotEmpty>
+			<isNotEmpty property="mem_nickname" prepend="AND">
+				MEM_NICKNAME = #mem_nickname#
+			</isNotEmpty>
+			<isNotEmpty property="mem_name" prepend="AND">
+				MEM_NAME = #mem_name#
+			</isNotEmpty>
+			<isNotEmpty property="mem_mail" prepend="AND">
+				MEM_MAIL = #mem_mail#
+			</isNotEmpty>
+		</dynamic>
+	</select>
+	
+	
+	
+	<update id = "changeProfileStatusY" parameterClass="Map">
+	
+		UPDATE MEMBER
+		   SET PROFILE_STATUS = 'y'
+		 WHERE MEM_ID = #mem_id#
+		
+	</update>
+	
+	
+	<select id = "searchNickname" parameterClass="Map" resultClass="memberVO">
+	
+		SELECT B.*
+		
+		  FROM (SELECT ROWNUM RNUM, A.*
+		  		  FROM (<include refid="selectAll"/>
+		  		  		AND MEM_NICKNAME LIKE '%' || #mem_nickname# || '%'
+		  		  		AND MEM_ID != #mem_id#
+		  		  		AND MEM_ID != 'admin'
+		  				ORDER BY MEM_NICKNAME
+		  			   ) A
+		  		) B
+		
+		<![CDATA[
+		
+		 WHERE B.RNUM >= #startCount#
+		   AND B.RNUM <= #endCount#
+		
+		]]>
+		
+		ORDER BY B.RNUM
+			
+	</select>
+	
+	<select id = "totalsearchNicknameCount" parameterClass = "Map" resultClass = "int">
+	
+		SELECT COUNT(MEM_NICKNAME)
+		  FROM MEMBER
+		 WHERE MEM_NICKNAME LIKE '%' || #mem_nickname# || '%'
+		   AND MEM_ID != #mem_id#
+		   AND MEM_ID != 'admin'
+		
+	</select> 
+		
+	<select id = "getSelectNicknameInfo" parameterClass = "Map" resultClass = "memberVO">
+	
+		SELECT *
+		  FROM MEMBER
+		 WHERE MEM_NICKNAME = #mem_nickname#
+		
+	</select>
+	
+	
+	<select id = "getSelectIdInfo" parameterClass = "Map" resultClass = "memberVO">
+	
+		SELECT *
+		  FROM MEMBER
+		 WHERE MEM_ID = #mem_id#
+	
+	</select>	
+	
+	<insert id="insertMemberInfo" parameterClass="memberVO" >
+		insert into MEMBER( MEM_ID,
+							MEM_NAME,
+							MEM_NICKNAME,
+							MEM_PWD,
+							MEM_PHONE,
+							MEM_MAIL
+							<isNotNull property="conect_way">
+							,CONECT_WAY
+							</isNotNull>
+							)
+					VALUES(#mem_id#,
+							#mem_name#,
+							#mem_nickname#,
+							#mem_pwd#,
+							#mem_phone#,
+							#mem_mail#
+							<isNotNull property="conect_way">
+							,#conect_way#
+							</isNotNull>
+							)
+	</insert>
+	
+	<select id="getMemid" parameterClass="map" resultClass="memberVO">
+		<include refid="selectAll" />
+		<dynamic>
+				<isNotEmpty property="mem_mail" prepend="AND">
+					MEM_MAIL = #mem_mail#
+				</isNotEmpty>
+				<isNotEmpty property="mem_name" prepend="AND">
+					MEM_NAME = #mem_name#
+				</isNotEmpty>
+		</dynamic>
+	</select>
+	<select id="getMempwd" parameterClass="map" resultClass="memberVO">
+		<include refid="selectAll" />
+		<dynamic>
+				<isNotEmpty property="mem_mail" prepend="AND">
+					MEM_MAIL = #mem_mail#
+				</isNotEmpty>
+				<isNotEmpty property="mem_id" prepend="AND">
+					MEM_ID = #mem_id#
+				</isNotEmpty>
+				<isNotEmpty property="mem_name" prepend="AND">
+					MEM_NAME = #mem_name#
+				</isNotEmpty>
+		</dynamic>
+	
+	</select>
+	
+	<update id="updateMemberInfo" parameterClass="memberVO">
+		UPDATE 
+			MEMBER
+		SET 
+			MEM_PWD = #mem_pwd#,
+			MEM_NAME = #mem_name#,
+			MEM_PHONE = #mem_phone#,
+			MEM_MAIL =#mem_mail#,
+			MEM_NICKNAME=#mem_nickname#
+		WHERE
+			MEM_ID= #mem_id#
+		
+	</update>
+	
+	<typeAlias alias="secessionVO2" type="com.ai.fishdr.vo.SecessionVO"/>
+	
+	<update id="deleteMemberInfo" parameterClass="String">
+		
+		UPDATE 
+			MEMBER
+		SET
+			MEM_STATUS='h'
+			
+		WHERE
+			MEM_ID= #mem_id#	
+	</update>
+	
+	<insert id="insertSecession" parameterClass="secessionVO2">
+		<selectKey keyProperty="secsn_no" resultClass="String">
+			SELECT SECESSION_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO SECESSION(
+						SECSN_NO,
+						SECSN_REASON,
+						MEM_ID
+					)
+				VALUES(
+					SECESSION_SEQ.NEXTVAL,
+					#secsn_reason#,
+					#mem_id#
+				)	
+		
+	</insert>
+	
+	
+	<!-- 특정 아이디의 프로필 사진 등록 여부 값 가져오기 -->
+	<select id = "getProfileStatus" parameterClass = "String" resultClass="String">
+	
+		SELECT PROFILE_STATUS
+		  FROM MEMBER
+		 WHERE MEM_ID = #mem_id#
+		
+	</select>
+	
+	<select id="emailCheck" parameterClass="String"  resultClass="String">
+		SELECT
+			 MEM_MAIL
+		FROM 
+			MEMBER
+		WHERE 
+			MEM_MAIL = #mem_mail#	
+	</select>
+	
+</sqlMap>

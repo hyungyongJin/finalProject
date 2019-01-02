@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="fishsymptms">
+
+	<typeAlias alias="fishsymptmsVO" type="com.ai.fishdr.vo.FishSymptmsVO"/>
+	
+	<select id="fish_symptms_List" parameterClass="String" resultClass="fishsymptmsVO">
+		SELECT
+			*
+		FROM
+			FISH_SYMPTMS
+		WHERE
+			TREAT_CODE = #treat_code#
+	</select>
+	
+	<insert id="fish_symptms_Insert" parameterClass="map">
+		 INSERT INTO FISH_SYMPTMS
+		 			(NO
+		 			,FISH_SYMPTMS
+		 			,TREAT_CODE)
+			  VALUES(FISH_SYMPTMS_SEQ.NEXTVAL
+			        ,#symptms_content#
+			        ,#treat_code#)
+	</insert>
+	
+</sqlMap>

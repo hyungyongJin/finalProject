@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="facePicture">
+
+	<typeAlias alias="facePictureVO" type="com.ai.fishdr.vo.FacePictureVO"/>
+	
+	<insert id = "insertFacePictureInfo" parameterClass = "facePictureVO">
+	
+		<selectKey keyProperty="fp_no" resultClass="String">
+		
+			SELECT FACEPICTURE_SEQ.NEXTVAL FROM DUAL
+						
+		</selectKey>
+	
+		INSERT INTO FACEPICTURE (
+		
+									FP_NO,
+									FP_FILE_SAVE_NAME
+									
+								)
+								
+						VALUES (
+						
+									#fp_no#,
+									#fp_file_save_name#
+						
+								)
+			
+	</insert>
+	
+	
+	<update id = "updateFacePictureInfo" parameterClass = "Map">
+	
+		UPDATE FACEPICTURE
+		
+			SET	FP_MEM_ID = #fp_mem_id#
+			
+		WHERE FP_FILE_SAVE_NAME = #fp_file_save_name#
+			
+	</update>
+	
+	
+	<select id = "facePictureInfoAjax" parameterClass = "Map" resultClass = "facePictureVO">
+	
+		SELECT * FROM FACEPICTURE
+		 WHERE FP_FILE_SAVE_NAME = #fp_file_save_name#
+	
+	</select>
+	
+	<select id = "facePictureInfo" parameterClass = "Map" resultClass = "facePictureVO">
+	
+		SELECT * FROM FACEPICTURE
+		WHERE FP_MEM_ID = #fp_mem_id#
+	
+	
+	</select>
+	
+	
+	<select id = "facePictureCount" parameterClass = "Map" resultClass = "int">
+	
+		SELECT COUNT(*) FROM FACEPICTURE
+		WHERE FP_MEM_ID = #fp_mem_id#
+	
+	
+	
+	</select>
+	
+	
+	
+	<delete id = "deleteFacePictureInfo" parameterClass = "Map">
+	
+		DELETE FACEPICTURE
+		WHERE FP_MEM_ID = #fp_mem_id#
+	
+	</delete>
+	
+	<!-- 특정 아이디의 프로필 사진 파일명 가져오기 -->
+	<select id = "getFpFileSaveName" parameterClass = "String" resultClass = "String">
+	
+		SELECT FP_FILE_SAVE_NAME
+		  FROM FACEPICTURE
+		 WHERE FP_MEM_ID = #fp_mem_id#
+		
+	</select>
+		
+</sqlMap>

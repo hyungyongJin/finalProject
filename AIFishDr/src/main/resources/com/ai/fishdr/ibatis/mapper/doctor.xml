@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="doctor">
+
+	<typeAlias alias="doctorVO" type="com.ai.fishdr.vo.DoctorVO"/>
+	
+	<select id="doctorInfo" parameterClass="map" resultClass="doctorVO">
+		SELECT 
+			*
+		FROM
+			DOCTOR
+		WHERE 
+			TREAT_CODE = #treat_code#
+			MEM_ID = #mem_id#
+	</select>	
+	
+	<insert id="insertDoctor" parameterClass="doctorVO">
+		INSERT INTO DOCTOR
+				(TREAT_CODE
+				,FISH_NAME
+				,FISH_NUMBER
+				,FISH_WEIGHT
+				,MEM_ID)
+		VALUES
+				('tr'||DOCTOR_SEQ.NEXTVAL
+				,#fish_name#
+				,#fish_number#
+				,#fish_weight#
+				,#mem_id#
+				)	
+	</insert>
+	
+	<select id="getTreat_code" resultClass="String">
+		SELECT
+			MAX(TO_NUMBER(SUBSTR(TREAT_CODE,3)))
+		FROM 
+			DOCTOR
+	</select>
+	
+</sqlMap>

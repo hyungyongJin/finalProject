@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="symptmsDiss">
+
+	<typeAlias alias="symptmsDissVO" type="com.ai.fishdr.vo.SymptmsDissVO"/>
+	
+	<sql id="selectAll">
+		 SELECT 
+		 	A.*,B.SYMPTMS_CONTENT,C.DISS_NAME
+		 FROM 
+		 	SYMPTMS_DISS A,SYMPTOMS B, DISEASE C
+		 WHERE 
+		 	A.DISS_CODE = C.DISS_CODE
+	       	AND A.SYMPTMS_CODE = B.SYMPTMS_CODE
+	</sql>
+	
+	<sql id="search">
+		<dynamic prepend="AND">
+			<isNotEmpty property="search_keyword">
+				<isEqual  property="search_keycode"  compareValue="TOTAL" open="(" close=")">
+						B.SYMPTMS_CONTENT LIKE '%'||#search_keyword#||'%'
+					OR	C.DISS_NAME LIKE '%'||#search_keyword#||'%'
+				</isEqual>
+				<isEqual property="search_keycode" compareValue="SYMPTMS_CONTENT">
+					B.SYMPTMS_CONTENT LIKE '%'||#search_keyword#||'%'
+				</isEqual>
+				<isEqual property="search_keycode" compareValue="DISS_NAME">
+					C.DISS_NAME LIKE '%'||#search_keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	
+	<select id="symptms_diss_List" parameterClass="map" resultClass="symptmsDissVO">
+		SELECT
+			B.*
+		FROM
+			(SELECT ROWNUM RNUM, A.* FROM(
+			 <include refid="selectAll"/>
+	       	 <include refid="search"/>
+			 ORDER BY TO_NUMBER(SUBSTR(A.SD_CODE,3)) ASC) A)B
+		<![CDATA[
+   		WHERE
+   			B.RNUM <= #startCount#
+   			AND B.RNUM >= #endCount#
+		]]>	
+		ORDER BY B.RNUM DESC
+	</select>
+	
+	<select id="totalCount" parameterClass="map" resultClass="int">
+		 SELECT 
+		 	COUNT(A.SD_CODE)
+		 FROM 
+		 	SYMPTMS_DISS A,SYMPTOMS B, DISEASE C
+		 WHERE 
+		 	A.DISS_CODE = C.DISS_CODE
+	       	AND A.SYMPTMS_CODE = B.SYMPTMS_CODE
+	       	<include refid="search"/>
+	</select>
+	
+	<insert id="symptms_diss_Insert" parameterClass="map">
+		INSERT INTO SYMPTMS_DISS
+			(SD_CODE
+			,DISS_CODE
+			,SYMPTMS_CODE)
+		VALUES
+			('sd'||SYMPTMS_DISS_SEQ.NEXTVAL
+			,#diss_code#
+			,#symptms_code#)
+	</insert>
+	
+	<select id="duplicationCheck" parameterClass="map" resultClass="symptmsDissVO">
+		SELECT 
+			*
+		FROM
+			SYMPTMS_DISS
+		WHERE
+			DISS_CODE = #diss_code#
+			AND SYMPTMS_CODE = #symptms_code#
+	</select>
+	
+	<delete id="symptms_diss_Delete" parameterClass="String">
+		DELETE
+		FROM
+			SYMPTMS_DISS
+		WHERE
+			SD_CODE = #sd_code#
+	</delete>
+	
+	<select id="symptms_diss_Info" parameterClass="String" resultClass="symptmsDissVO">
+		<include refid="selectAll"/>
+		AND A.SD_CODE = #sd_code#
+	</select>
+	
+	<update id="symptms_diss_Update" parameterClass="map">
+		UPDATE
+			SYMPTMS_DISS
+		SET
+			DISS_CODE = #diss_code#
+			,SYMPTMS_CODE = #symptms_code#
+		WHERE
+			SD_CODE = #sd_code# 
+	</update>	
+</sqlMap>

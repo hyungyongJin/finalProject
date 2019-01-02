@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "medicine">
+
+	<typeAlias alias="mdcinVO" type="com.ai.fishdr.vo.MedicineVO"/>
+	
+	<sql id="selectAll">
+		SELECT 
+			*
+		FROM
+			MEDICINE
+		WHERE
+			MDCIN_STATUS = 'y'
+	</sql>
+	
+	<sql id="search">
+		<dynamic prepend="AND">
+			<isEqual property="search_L_keycode" compareValue="항생/항균">
+				CTGRY_CODE = 'me1' 
+				<isEqual property="search_M_keycode" compareValue="업체명">
+					AND MDCIN_ENTRPS_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="제품명">
+					AND MDCIN_PRDUCT_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="중분류">
+				</isEqual>
+			</isEqual>
+			<isEqual property="search_L_keycode" compareValue="영양/대사촉진">
+				CTGRY_CODE = 'me2'
+				<isEqual property="search_M_keycode" compareValue="업체명">
+					AND MDCIN_ENTRPS_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="제품명">
+					AND MDCIN_PRDUCT_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="중분류">
+				</isEqual>
+			</isEqual>
+			<isEqual property="search_L_keycode" compareValue="백신/면역증강">
+				CTGRY_CODE = 'me3'
+				<isEqual property="search_M_keycode" compareValue="업체명">
+					AND MDCIN_ENTRPS_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="제품명">
+					AND MDCIN_PRDUCT_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="중분류">
+				</isEqual>
+			</isEqual>
+			<isEqual property="search_L_keycode" compareValue="생균/효소">
+				CTGRY_CODE = 'me4'
+				<isEqual property="search_M_keycode" compareValue="업체명">
+					AND MDCIN_ENTRPS_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="제품명">
+					AND MDCIN_PRDUCT_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="중분류">
+				</isEqual>
+			</isEqual>
+			<isEqual property="search_L_keycode" compareValue="소독">
+				CTGRY_CODE = 'me5'
+				<isEqual property="search_M_keycode" compareValue="업체명">
+					AND MDCIN_ENTRPS_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="제품명">
+					AND MDCIN_PRDUCT_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="중분류">
+				</isEqual>
+			</isEqual>
+			<isEqual property="search_L_keycode" compareValue="구충">
+				CTGRY_CODE = 'me6'
+				<isEqual property="search_M_keycode" compareValue="업체명">
+					AND MDCIN_ENTRPS_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="제품명">
+					AND MDCIN_PRDUCT_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="중분류">
+				</isEqual>
+			</isEqual>
+			<isEqual property="search_L_keycode" compareValue="대분류">
+				<isEqual property="search_M_keycode" compareValue="업체명" >
+					MDCIN_ENTRPS_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="제품명">
+					MDCIN_PRDUCT_NAME LIKE '%' || #search_keyword# || '%'
+				</isEqual>
+				<isEqual property="search_M_keycode" compareValue="중분류">
+				</isEqual>
+			</isEqual>
+		</dynamic>
+	</sql>
+	
+	<select id="mdcinList" resultClass="mdcinVO">
+		<include refid="selectAll"/>
+	</select>
+	
+	<select id="getMdcinList" parameterClass="map" resultClass="mdcinVO">
+		SELECT 
+			B.*
+		FROM
+			(SELECT ROWNUM RNUM, A.*
+			   FROM (<include refid="selectAll"/>
+			   		 <include refid="search"/>
+			         ORDER BY TO_NUMBER(SUBSTR(MDCIN_CODE,6)) ASC) A) B
+        <![CDATA[
+        WHERE
+        	B.RNUM <= #startCount#
+        	AND B.RNUM >= #endCount#
+       	]]>
+        ORDER BY B.RNUM DESC
+	</select>
+	
+	<select id="totalCount" parameterClass="map" resultClass="int">
+		SELECT
+			COUNT(MDCIN_CODE)
+		FROM
+			MEDICINE
+		WHERE
+			MDCIN_STATUS = 'y'
+			<include refid="search"/>
+	</select>
+	
+	<select id="getMdcinInfo" parameterClass="String" resultClass="mdcinVO">
+		<include refid="selectAll"/>	
+		AND	MDCIN_CODE = #mdcin_code#	
+	</select>
+	
+	<delete id="deleteMdcin" parameterClass="String">
+		UPDATE
+			MEDICINE
+		SET
+			MDCIN_STATUS = 'n'
+		WHERE
+			MDCIN_CODE = #mdcin_code#
+	</delete>
+	
+	<insert id="insertMdcin" parameterClass="mdcinVO">
+		INSERT INTO MEDICINE
+				(MDCIN_CODE
+				,MDCIN_ENTRPS_NAME
+				,MDCIN_PRDUCT_NAME
+				,MDCIN_ATPN
+				,MDCIN_PACK
+				,MDCIN_EFCY_EFFECT
+				,MDCIN_MATERIAL
+				,CTGRY_CODE)
+		VALUES
+				('mdcin'||MEDICINE_SEQ.NEXTVAL
+				,#mdcin_entrps_name#
+				,#mdcin_prduct_name#
+				,#mdcin_atpn#
+				,#mdcin_pack#
+				,#mdcin_efcy_effect#
+				,#mdcin_material#
+				,#ctgry_code#)
+	</insert>
+	
+	<update id="updateMdcin" parameterClass="mdcinVO">
+		UPDATE
+			MEDICINE
+		SET
+			MDCIN_ENTRPS_NAME = #mdcin_entrps_name#
+			,MDCIN_PRDUCT_NAME = #mdcin_prduct_name#
+			,MDCIN_ATPN = #mdcin_atpn#
+			,MDCIN_PACK = #mdcin_pack#
+			,MDCIN_EFCY_EFFECT = #mdcin_efcy_effect#
+			,MDCIN_MATERIAL = #mdcin_material#
+			,CTGRY_CODE = #ctgry_code#
+		WHERE
+			MDCIN_CODE = #mdcin_code#
+	</update>
+	
+	<update id="updateHit" parameterClass="String">
+		UPDATE medicine
+			SET MDCIN_HIT = MDCIN_HIT+1
+			WHERE mdcin_code = #mdcin_code#
+	</update>
+	
+	
+	<!-- 특정 의약품에게 점수를 매긴 횟수 구하기 -->
+	<select id = "medicineCount" parameterClass="String" resultClass="int">
+	
+		SELECT COUNT(MDCIN_CODE)
+		  FROM MEDICINE_SCORE
+		 WHERE MDCIN_CODE = #mdcin_code#
+	
+	</select>
+	
+	
+	<!-- 특정 의약품에게 매겨진 점수의 총합 구하기 -->
+	<select id = "totalMedicineScore" parameterClass="String" resultClass="int">
+	
+		SELECT SUM(MDCIN_SCORE)
+		  FROM MEDICINE_SCORE
+		 WHERE MDCIN_CODE = #mdcin_code#
+	
+	</select>
+	
+	
+	
+</sqlMap>

@@ -1,0 +1,789 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="prescription">
+
+	<typeAlias alias="prescriptionVO" type="com.ai.fishdr.vo.PrescriptionVO"/>
+
+<!-- 		SELECT DO.TREAT_CODE, PR.PRSCRPTN_CODE, -->
+<!-- 			   DO.FISH_NAME, DO.FISH_WEIGHT, DO.FISH_NUMBER, FS.FISH_SYMPTMS, -->
+<!-- 			   DO.TREAT_REG_DATE, -->
+<!-- 			   HO.HOSPITAL_NAME -->
+<!-- 		  FROM DOCTOR DO, FISH_SYMPTMS FS, MEMBER ME, PRESCRIPTION PR, HOSPITAL HO -->
+<!-- 		 WHERE DO.TREAT_CODE = FS.TREAT_CODE -->
+<!-- 		   AND DO.MEM_ID = ME.MEM_ID -->
+<!-- 		   AND ME.MEM_ID = PR.MEM_ID -->
+<!-- 		   AND PR.HOSPITAL_CODE = HO.HOSPITAL_CODE -->
+<!-- 		   AND DO.MEM_ID = #mem_id# -->	
+	
+	<!-- 처방내역 리스트 -->
+	<sql id = "selectJoin">
+
+		SELECT DO.TREAT_CODE, PR.PRSCRPTN_CODE, PR.PRSCRPTN_NAME,
+			   DO.FISH_NAME, DO.FISH_WEIGHT, DO.FISH_NUMBER, 
+			   LISTAGG(TO_CHAR(FS.FISH_SYMPTMS), '_') within group (order by FS.FISH_SYMPTMS) FISH_SYMPTMS,
+			   DO.TREAT_REG_DATE,
+			   HO.HOSPITAL_NAME
+		  FROM DOCTOR DO, FISH_SYMPTMS FS, MEMBER ME, PRESCRIPTION PR, HOSPITAL HO
+		 WHERE DO.TREAT_CODE = FS.TREAT_CODE
+		   AND DO.MEM_ID = ME.MEM_ID
+		   AND ME.MEM_ID = PR.MEM_ID
+		   AND PR.HOSPITAL_CODE = HO.HOSPITAL_CODE
+		   AND DO.MEM_ID = #mem_id#
+	
+	</sql>
+	
+	<!-- 특정한 품종에게 나타날 수 있는 증상과 해당 증상에 사용할 수 있는 약들의 용법 및 용량, 휴약기간 정보를 갖고온 리스트 -->
+	<sql id = "selectResultPrescription">
+
+<!-- 		SELECT FIDFDISYSDMDMC.FISH_CODE, FIDFDISYSDMDMC.FISH_NAME, -->
+<!-- 			   FIDFDISYSDMDMC.DISS_CODE, FIDFDISYSDMDMC.DISS_NAME, -->
+<!-- 			   FIDFDISYSDMDMC.MDCIN_CODE, FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME, -->
+<!-- 			   FIDFDISYSDMDMC.SYMPTMS_CODE, FIDFDISYSDMDMC.SYMPTMS_CONTENT, -->
+<!-- 			   CA.USCP_CONTENT, -->
+<!-- 			   WI.WITHDRAWAL_PERIOD -->
+			   
+<!-- 		  FROM ( -->
+		  
+<!-- 				SELECT FIDFDISYSD.FISH_CODE, FIDFDISYSD.FISH_NAME, FIDFDISYSD.DISS_CODE, -->
+<!-- 					   FIDFDISYSD.DISS_NAME, MD.MDCIN_CODE, MD.MDCIN_PRDUCT_NAME, -->
+<!-- 					   FIDFDISYSD.SYMPTMS_CODE, FIDFDISYSD.SYMPTMS_CONTENT -->
+					   
+<!-- 				  FROM MEDICINE MD, MDCIN_DISS MC, -->
+					   
+<!-- 						( -->
+						
+<!-- 							SELECT FIDFDI.FISH_CODE, FIDFDI.DISS_CODE, FIDFDI.FISH_NAME, -->
+<!-- 								   FIDFDI.DISS_NAME, SY.SYMPTMS_CODE, SY.SYMPTMS_CONTENT -->
+									   
+<!-- 							  FROM SYMPTOMS SY, SYMPTMS_DISS SD, -->
+								  
+<!-- 									( -->
+									
+<!-- 										SELECT FI.FISH_CODE, DI.DISS_CODE, FI.FISH_NAME, DI.DISS_NAME -->
+<!-- 										  FROM FISH FI, DISS_FISH DF, DISEASE DI -->
+<!-- 										 WHERE FI.FISH_CODE = DF.FISH_CODE -->
+<!-- 										   AND DF.DISS_CODE = DI.DISS_CODE -->
+<!-- 										   AND FI.FISH_NAME LIKE '%' || '방어' || '%' -->
+										   
+<!-- 									) FIDFDI -->
+										
+<!-- 							 WHERE FIDFDI.DISS_CODE = SD.DISS_CODE -->
+<!-- 							   AND SD.SYMPTMS_CODE = SY.SYMPTMS_CODE -->
+							   
+<!-- 							   AND SY.SYMPTMS_CONTENT LIKE '%' || #fish_symptms# || '%' -->
+							   
+<!-- 						) FIDFDISYSD -->
+							 
+<!-- 				 WHERE MD.MDCIN_CODE = MC.MDCIN_CODE -->
+<!-- 				   AND MC.DISS_CODE = FIDFDISYSD.DISS_CODE -->
+				   
+<!-- 			   ) FIDFDISYSDMDMC, CAPACITY_USAGE CA, WITHDRAWAL WI -->
+			   
+<!-- 		 WHERE FIDFDISYSDMDMC.MDCIN_CODE = CA.MDCIN_CODE -->
+<!-- 		   AND CA.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE -->
+<!-- 		   AND FIDFDISYSDMDMC.MDCIN_CODE = WI.MDCIN_CODE -->
+<!-- 		   AND WI.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE -->
+		   
+<!-- 		ORDER BY FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME, FIDFDISYSDMDMC.DISS_NAME -->
+
+
+		SELECT FIDFDISYSDMDMC.FISH_CODE, FIDFDISYSDMDMC.FISH_NAME,
+		       FIDFDISYSDMDMC.DISS_CODE, FIDFDISYSDMDMC.DISS_NAME,
+		       FIDFDISYSDMDMC.MDCIN_CODE, FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME,
+		       FIDFDISYSDMDMC.SYMPTMS_CODE, FIDFDISYSDMDMC.SYMPTMS_CONTENT,
+		       TO_CHAR(CA.USCP_CONTENT) USCP_CONTENT,
+		       WI.WITHDRAWAL_PERIOD
+		       
+		  FROM (
+		  
+		        SELECT FIDFDISYSD.FISH_CODE, FIDFDISYSD.FISH_NAME,
+		               LISTAGG(TO_CHAR(FIDFDISYSD.DISS_CODE),'_') WITHIN GROUP (ORDER BY FIDFDISYSD.DISS_CODE) DISS_CODE,
+		               LISTAGG(TO_CHAR(FIDFDISYSD.DISS_NAME),'_') WITHIN GROUP (ORDER BY FIDFDISYSD.DISS_NAME) DISS_NAME,
+		               MD.MDCIN_CODE, MD.MDCIN_PRDUCT_NAME,
+		               FIDFDISYSD.SYMPTMS_CODE, FIDFDISYSD.SYMPTMS_CONTENT
+		               
+		          FROM MEDICINE MD, MDCIN_DISS MC,
+		               
+		                (
+		                
+		                    SELECT FIDFDI.FISH_CODE, FIDFDI.DISS_CODE, FIDFDI.FISH_NAME,
+		                           FIDFDI.DISS_NAME,
+		                           LISTAGG(TO_CHAR(SY.SYMPTMS_CODE), '_') WITHIN GROUP (ORDER BY SY.SYMPTMS_CODE) SYMPTMS_CODE,
+		                           LISTAGG(TO_CHAR(SY.SYMPTMS_CONTENT), '_') WITHIN GROUP (ORDER BY SY.SYMPTMS_CONTENT) SYMPTMS_CONTENT
+		                               
+		                      FROM SYMPTOMS SY, SYMPTMS_DISS SD,
+		                          
+		                            (
+		                            
+		                                SELECT FI.FISH_CODE, DI.DISS_CODE, FI.FISH_NAME, DI.DISS_NAME
+		                                  FROM FISH FI, DISS_FISH DF, DISEASE DI
+		                                 WHERE FI.FISH_CODE = DF.FISH_CODE
+		                                   AND DF.DISS_CODE = DI.DISS_CODE
+		                                   AND FI.FISH_NAME LIKE '%' || #fish_name# || '%'
+		                                   
+		                            ) FIDFDI
+		                                
+		                     WHERE FIDFDI.DISS_CODE = SD.DISS_CODE
+		                       AND SD.SYMPTMS_CODE = SY.SYMPTMS_CODE
+		                       AND SY.SYMPTMS_CONTENT LIKE '%' || #fish_symptms# || '%'
+		                       
+		                    GROUP BY FIDFDI.FISH_CODE, FIDFDI.DISS_CODE, FIDFDI.FISH_NAME, FIDFDI.DISS_NAME
+		                    
+		                ) FIDFDISYSD
+		                     
+		         WHERE MD.MDCIN_CODE = MC.MDCIN_CODE
+		           AND MC.DISS_CODE = FIDFDISYSD.DISS_CODE
+		        GROUP BY FIDFDISYSD.FISH_CODE, FIDFDISYSD.FISH_NAME, MD.MDCIN_CODE, MD.MDCIN_PRDUCT_NAME, FIDFDISYSD.SYMPTMS_CODE, FIDFDISYSD.SYMPTMS_CONTENT
+		           
+		       ) FIDFDISYSDMDMC, CAPACITY_USAGE CA, WITHDRAWAL WI
+		       
+		 WHERE FIDFDISYSDMDMC.MDCIN_CODE = CA.MDCIN_CODE
+		   AND CA.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+		   AND FIDFDISYSDMDMC.MDCIN_CODE = WI.MDCIN_CODE
+		   AND WI.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+		   
+		GROUP BY FIDFDISYSDMDMC.FISH_CODE, FIDFDISYSDMDMC.FISH_NAME,
+		         FIDFDISYSDMDMC.DISS_CODE, FIDFDISYSDMDMC.DISS_NAME,
+		         FIDFDISYSDMDMC.MDCIN_CODE, FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME,
+		         FIDFDISYSDMDMC.SYMPTMS_CODE, FIDFDISYSDMDMC.SYMPTMS_CONTENT, TO_CHAR(CA.USCP_CONTENT), WI.WITHDRAWAL_PERIOD
+		   
+		ORDER BY FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME, FIDFDISYSDMDMC.DISS_NAME
+	
+	</sql>
+	
+	
+	<!-- 처방내역 리스트 검색 -->
+	<sql id = "searchCondition">
+	
+		<dynamic prepend = "AND">
+	
+			<isEmpty property = "search_keyword">
+			
+				1 = 1
+				
+			</isEmpty>
+				
+			<isNotEmpty property = "search_keyword">
+				
+				<isEqual property = "search_keycode" compareValue="TOTAL" open = "(" close = ")">
+			
+					DO.FISH_NAME	 LIKE '%' || #search_keyword# || '%'
+					OR
+					DO.FISH_SYMPTMS	 LIKE '%' || #search_keyword# || '%'
+					OR
+					DO.HOSPITAL_NAME LIKE '%' || #search_keyword# || '%'
+					
+				</isEqual>
+							
+				<isEqual property = "search_keycode" compareValue="OPTION_FISH_NAME">
+				
+					DO.FISH_NAME	 LIKE '%' || #search_keyword# || '%'
+				
+				</isEqual>
+				
+				<isEqual property = "search_keycode" compareValue="OPTION_FISH_SYMPTMS">
+				
+					DO.FISH_SYMPTMS	 LIKE '%' || #search_keyword# || '%'
+				
+				</isEqual>
+				
+				<isEqual property = "search_keycode" compareValue="OPTION_HOSPITAL_NAME">
+				
+					DO.HOSPITAL_NAME LIKE '%' || #search_keyword# || '%'
+				
+				</isEqual>
+				
+			</isNotEmpty>
+		
+		</dynamic>
+		
+	</sql>
+	
+	
+	<insert id="prscrptn_Insert" parameterClass="prescriptionVO">
+		INSERT INTO PRESCRIPTION
+					(PRSCRPTN_CODE
+					,PRSCRPTN_NAME
+					,MEM_ID
+					,HOSPITAL_CODE)
+			  VALUES('pr'||PRESCRIPTION_SEQ.NEXTVAL
+			  		,#prscrptn_name#||'_'||'pr'||PRESCRIPTION_SEQ.NEXTVAL
+			  		,#mem_id#
+			  		,#hospital_code#)
+	</insert>	
+	
+	<select id="prscrptn_getCodeNumber" resultClass="String">
+		SELECT
+    		MAX(TO_NUMBER(SUBSTR(PRSCRPTN_CODE,3)))
+		FROM
+    		PRESCRIPTION
+	</select>
+	
+	<select id="prscrptnInfo" parameterClass="String" resultClass="prescriptionVO">
+		SELECT
+			*
+		FROM
+			PRESCRIPTION
+		WHERE
+			PRSCRPTN_CODE = #prscrptn_code#
+	</select>
+	
+	<select id="getMemsPrscrptnInfo" parameterClass="map" resultClass="java.util.HashMap">
+		SELECT B.* FROM(
+		SELECT ROWNUM RNUM , A.* 
+			FROM (SELECT P.PRSCRPTN_CODE
+			  ,P.PRSCRPTN_EX_HIT
+			  ,P.PRSCRPTN_NAME
+			  ,TO_CHAR(PRSCRPTN_REG_DATE,'YY/MM/DD' ) PRSCRPTN_REG_DATE
+			  ,H.*
+			FROM PRESCRIPTION P , HOSPITAL H
+			WHERE P.HOSPITAL_CODE  =  H.HOSPITAL_CODE
+				AND P.MEM_ID = #mem_id#
+				ORDER BY PRSCRPTN_REG_DATE DESC)A)B
+			<![CDATA[
+			 WHERE B.RNUM >= #startCount#
+				AND B.RNUM<=#endCount#
+			]]>
+	</select>
+	<select id="totalMemsPrsCnt" parameterClass="map" resultClass="int">
+		SELECT COUNT(*)FROM PRESCRIPTION WHERE MEM_ID = #mem_id#
+	</select>
+	
+		
+	<!-- 처방 내역 리스트 -->
+	<select id = "getPrescriptionList" parameterClass="Map" resultClass="java.util.HashMap">
+	
+		SELECT B.*
+		
+		  FROM (SELECT ROWNUM RNUM, A.*
+		  		  FROM (<include refid = "selectJoin"/>
+						<include refid = "searchCondition"/>
+						GROUP BY DO.TREAT_CODE, PR.PRSCRPTN_CODE,
+   				  				 DO.FISH_NAME, DO.FISH_WEIGHT, DO.FISH_NUMBER, 
+   				  				 DO.TREAT_REG_DATE, HO.HOSPITAL_NAME, PR.PRSCRPTN_NAME
+						ORDER BY TO_NUMBER(SUBSTR(DO.TREAT_CODE, 3)), TO_NUMBER(SUBSTR(PR.PRSCRPTN_CODE, 3))
+		  	   		   ) A
+		  	    ) B
+		  
+		<![CDATA[
+		
+		 WHERE B.RNUM <= #startCount#
+		   AND B.RNUM >= #endCount#
+		
+		]]>
+		
+		ORDER BY B.RNUM DESC
+				  
+	</select>
+	
+	
+	<!-- 처방 내역 리스트 총 개수 -->
+	<select id = "totalPrescriptionListAllCount" parameterClass="Map" resultClass="int">
+	
+<!-- 		SELECT COUNT(DO.TREAT_CODE) -->
+<!-- 		  FROM DOCTOR DO, FISH_SYMPTMS FS, MEMBER ME, PRESCRIPTION PR, HOSPITAL HO -->
+<!-- 		 WHERE DO.TREAT_CODE = FS.TREAT_CODE -->
+<!-- 		   AND DO.MEM_ID = ME.MEM_ID -->
+<!-- 		   AND ME.MEM_ID = PR.MEM_ID -->
+<!-- 		   AND PR.HOSPITAL_CODE = HO.HOSPITAL_CODE -->
+<!-- 		   AND DO.MEM_ID = #mem_id# -->
+<!-- 		ORDER BY TO_NUMBER(SUBSTR(DO.TREAT_CODE, 3)), TO_NUMBER(SUBSTR(PR.PRSCRPTN_CODE, 3)) -->
+
+		SELECT COUNT(DOFSMEPRHO.TREAT_CODE)
+		
+		  FROM (
+		  
+			  		SELECT DO.TREAT_CODE, PR.PRSCRPTN_CODE,
+						   DO.FISH_NAME, DO.FISH_WEIGHT, DO.FISH_NUMBER, 
+						   LISTAGG(TO_CHAR(FS.FISH_SYMPTMS), '_') within group (order by FS.FISH_SYMPTMS) FISH_SYMPTMS,
+						   DO.TREAT_REG_DATE,
+						   HO.HOSPITAL_NAME
+					  FROM DOCTOR DO, FISH_SYMPTMS FS, MEMBER ME, PRESCRIPTION PR, HOSPITAL HO
+					 WHERE DO.TREAT_CODE = FS.TREAT_CODE
+					   AND DO.MEM_ID = ME.MEM_ID
+					   AND ME.MEM_ID = PR.MEM_ID
+					   AND PR.HOSPITAL_CODE = HO.HOSPITAL_CODE
+					   AND DO.MEM_ID = #mem_id#
+					GROUP BY DO.TREAT_CODE, PR.PRSCRPTN_CODE,
+			  				 DO.FISH_NAME, DO.FISH_WEIGHT, DO.FISH_NUMBER, 
+			  				 DO.TREAT_REG_DATE, HO.HOSPITAL_NAME
+			  				 
+		  	   ) DOFSMEPRHO
+		 
+	</select>
+	
+	
+	<!-- 검색 조건에 맞는 처방 내역 리스트 개수 -->
+	<select id = "totalPrescriptionListCount" parameterClass="Map" resultClass="int">
+	
+<!-- 		SELECT COUNT(DO.TREAT_CODE) -->
+<!-- 		  FROM DOCTOR DO, FISH_SYMPTMS FS, MEMBER ME, PRESCRIPTION PR, HOSPITAL HO -->
+<!-- 		 WHERE DO.TREAT_CODE = FS.TREAT_CODE -->
+<!-- 		   AND DO.MEM_ID = ME.MEM_ID -->
+<!-- 		   AND ME.MEM_ID = PR.MEM_ID -->
+<!-- 		   AND PR.HOSPITAL_CODE = HO.HOSPITAL_CODE -->
+<!-- 		   AND DO.MEM_ID = #mem_id# -->
+<!-- 		   <include refid = "searchCondition"/> -->
+
+		SELECT COUNT(DO.TREAT_CODE)
+		
+		  FROM (
+		  
+			  		SELECT DO.TREAT_CODE, PR.PRSCRPTN_CODE,
+						   DO.FISH_NAME, DO.FISH_WEIGHT, DO.FISH_NUMBER, 
+						   LISTAGG(TO_CHAR(FS.FISH_SYMPTMS), '_') within group (order by FS.FISH_SYMPTMS) FISH_SYMPTMS,
+						   DO.TREAT_REG_DATE,
+						   HO.HOSPITAL_NAME
+					  FROM DOCTOR DO, FISH_SYMPTMS FS, MEMBER ME, PRESCRIPTION PR, HOSPITAL HO
+					 WHERE DO.TREAT_CODE = FS.TREAT_CODE
+					   AND DO.MEM_ID = ME.MEM_ID
+					   AND ME.MEM_ID = PR.MEM_ID
+					   AND PR.HOSPITAL_CODE = HO.HOSPITAL_CODE
+					   AND DO.MEM_ID = #mem_id#
+					GROUP BY DO.TREAT_CODE, PR.PRSCRPTN_CODE,
+			  				 DO.FISH_NAME, DO.FISH_WEIGHT, DO.FISH_NUMBER, 
+			  				 DO.TREAT_REG_DATE, HO.HOSPITAL_NAME
+			  				 
+		  	   ) DO
+		  	   
+		 WHERE 1=1
+		<include refid = "searchCondition"/>
+		
+
+	</select>
+	
+	
+	<!-- 특정한 품종에게 나타날 수 있는 증상과 해당 증상에 사용할 수 있는 약들의 용법 및 용량, 휴약기간 정보를 갖고온 리스트 -->
+	<select id = "resultPrescription" parameterClass="Map" resultClass="java.util.HashMap">
+		
+		<include refid = "selectResultPrescription"/>
+		
+<!-- 		SELECT B.* -->
+		
+<!-- 		  FROM (SELECT ROWNUM RNUM, A.* -->
+<!-- 		  		  FROM (<include refid = "selectResultPrescription"/> -->
+<!-- 		  	   		   ) A -->
+<!-- 		  	    ) B -->
+		  
+<!-- 		<![CDATA[ -->
+		
+<!--  		 WHERE B.RNUM >= #startCount# -->
+<!--  		   AND B.RNUM <= #endCount# -->
+		
+<!--  		]]> -->
+		
+<!-- 		ORDER BY B.RNUM -->
+				
+	</select>
+	
+	
+	<!-- 처방 가능 의약품 리스트 총 개수 -->
+	<select id = "totalResultAllPrescription" parameterClass="Map" resultClass="int">
+	
+		SELECT COUNT(FIDFDISYSDMDMC.MDCIN_CODE)
+			   
+		  FROM (
+		  
+				SELECT FIDFDISYSD.FISH_CODE, FIDFDISYSD.FISH_NAME, FIDFDISYSD.DISS_CODE,
+					   FIDFDISYSD.DISS_NAME, MD.MDCIN_CODE, MD.MDCIN_PRDUCT_NAME,
+					   FIDFDISYSD.SYMPTMS_CODE, FIDFDISYSD.SYMPTMS_CONTENT
+					   
+				  FROM MEDICINE MD, MDCIN_DISS MC,
+					   
+						(
+						
+							SELECT FIDFDI.FISH_CODE, FIDFDI.DISS_CODE, FIDFDI.FISH_NAME,
+								   FIDFDI.DISS_NAME, SY.SYMPTMS_CODE, SY.SYMPTMS_CONTENT
+									   
+							  FROM SYMPTOMS SY, SYMPTMS_DISS SD,
+								  
+									(
+									
+										SELECT FI.FISH_CODE, DI.DISS_CODE, FI.FISH_NAME, DI.DISS_NAME
+										  FROM FISH FI, DISS_FISH DF, DISEASE DI
+										 WHERE FI.FISH_CODE = DF.FISH_CODE
+										   AND DF.DISS_CODE = DI.DISS_CODE
+										   AND FI.FISH_NAME LIKE '%' || #fish_name# || '%'
+										   
+									) FIDFDI
+										
+							 WHERE FIDFDI.DISS_CODE = SD.DISS_CODE
+							   AND SD.SYMPTMS_CODE = SY.SYMPTMS_CODE
+							   AND SY.SYMPTMS_CONTENT LIKE '%' || #fish_symptms# || '%'
+							   
+						) FIDFDISYSD
+							 
+				 WHERE MD.MDCIN_CODE = MC.MDCIN_CODE
+				   AND MC.DISS_CODE = FIDFDISYSD.DISS_CODE
+				   
+			   ) FIDFDISYSDMDMC, CAPACITY_USAGE CA, WITHDRAWAL WI
+			   
+		 WHERE FIDFDISYSDMDMC.MDCIN_CODE = CA.MDCIN_CODE
+		   AND CA.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+		   AND FIDFDISYSDMDMC.MDCIN_CODE = WI.MDCIN_CODE
+		   AND WI.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+		   
+		ORDER BY FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME, FIDFDISYSDMDMC.DISS_NAME
+	
+	</select>
+	
+	
+	
+	
+	<!-- 특정한 증상을 보이는 특정한 품종한테 최종적으로 처방한 약 정보 -->
+	
+	<select id = "finalResultPrescription" parameterClass="Map" resultClass="java.util.HashMap">
+	
+<!-- 		SELECT FIDFDISYSDMDMCCAWI.MDCIN_CODE, FIDFDISYSDMDMCCAWI.MDCIN_PRDUCT_NAME, FIDFDISYSDMDMCCAWI.SYMPTMS_CODE, FIDFDISYSDMDMCCAWI.SYMPTMS_CONTENT, FIDFDISYSDMDMCCAWI.USCP_CONTENT, FIDFDISYSDMDMCCAWI.WITHDRAWAL_PERIOD -->
+
+<!-- 		  FROM ( -->
+		  
+<!-- 		            SELECT FIDFDISYSDMDMC.FISH_CODE, FIDFDISYSDMDMC.FISH_NAME, -->
+<!-- 		                   FIDFDISYSDMDMC.DISS_CODE, FIDFDISYSDMDMC.DISS_NAME, -->
+<!-- 		                   FIDFDISYSDMDMC.MDCIN_CODE, FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME, -->
+<!-- 		                   FIDFDISYSDMDMC.SYMPTMS_CODE, FIDFDISYSDMDMC.SYMPTMS_CONTENT, -->
+<!-- 		                   CA.USCP_CONTENT, -->
+<!-- 		                   WI.WITHDRAWAL_PERIOD -->
+		                   
+<!-- 		              FROM ( -->
+		
+<!-- 		                    SELECT FIDFDISYSD.FISH_CODE, FIDFDISYSD.FISH_NAME, FIDFDISYSD.DISS_CODE, -->
+<!-- 		                           FIDFDISYSD.DISS_NAME, MD.MDCIN_CODE, MD.MDCIN_PRDUCT_NAME, -->
+<!-- 		                           FIDFDISYSD.SYMPTMS_CODE, FIDFDISYSD.SYMPTMS_CONTENT -->
+		                           
+<!-- 		                      FROM MEDICINE MD, MDCIN_DISS MC, -->
+		                           
+<!-- 		                            ( -->
+		                            
+<!-- 		                                SELECT FIDFDI.FISH_CODE, FIDFDI.DISS_CODE, FIDFDI.FISH_NAME, -->
+<!-- 		                                       FIDFDI.DISS_NAME, SY.SYMPTMS_CODE, SY.SYMPTMS_CONTENT -->
+		                                           
+<!-- 		                                  FROM SYMPTOMS SY, SYMPTMS_DISS SD, -->
+		                                      
+<!-- 		                                        ( -->
+		                                        
+<!-- 		                                            SELECT FI.FISH_CODE, DI.DISS_CODE, FI.FISH_NAME, DI.DISS_NAME -->
+<!-- 		                                              FROM FISH FI, DISS_FISH DF, DISEASE DI -->
+<!-- 		                                             WHERE FI.FISH_CODE = DF.FISH_CODE -->
+<!-- 		                                               AND DF.DISS_CODE = DI.DISS_CODE -->
+<!-- 		                                               AND FI.FISH_NAME LIKE '%' || #fish_name# || '%' -->
+		                                               
+<!-- 		                                        ) FIDFDI -->
+		                                            
+<!-- 		                                 WHERE FIDFDI.DISS_CODE = SD.DISS_CODE -->
+<!-- 		                                   AND SD.SYMPTMS_CODE = SY.SYMPTMS_CODE -->
+<!-- 		                                   AND SY.SYMPTMS_CONTENT LIKE '%' || #fish_symptms# || '%' -->
+		                                   
+<!-- 		                            ) FIDFDISYSD -->
+		                                 
+<!-- 		                     WHERE MD.MDCIN_CODE = MC.MDCIN_CODE -->
+<!-- 		                       AND MC.DISS_CODE = FIDFDISYSD.DISS_CODE -->
+		                       
+<!-- 		                   ) FIDFDISYSDMDMC, CAPACITY_USAGE CA, WITHDRAWAL WI -->
+		                   
+<!-- 		             WHERE FIDFDISYSDMDMC.MDCIN_CODE = CA.MDCIN_CODE -->
+<!-- 		               AND CA.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE -->
+<!-- 		               AND FIDFDISYSDMDMC.MDCIN_CODE = WI.MDCIN_CODE -->
+<!-- 		               AND WI.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE -->
+		               
+<!-- 		            ORDER BY FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME, FIDFDISYSDMDMC.DISS_NAME -->
+		            
+<!-- 		       ) FIDFDISYSDMDMCCAWI, MDCIN_PRSCRPTN MP, PRESCRIPTION PR -->
+		
+<!-- 		 WHERE FIDFDISYSDMDMCCAWI.MDCIN_CODE = MP.MDCIN_CODE -->
+<!-- 		   AND MP.PRSCRPTN_CODE = #prscrptn_code# -->
+
+
+		SELECT FIDFDISYSDMDMCCAWI.MDCIN_CODE, FIDFDISYSDMDMCCAWI.MDCIN_PRDUCT_NAME,
+		       FIDFDISYSDMDMCCAWI.DISS_CODE, FIDFDISYSDMDMCCAWI.DISS_NAME,
+		       FIDFDISYSDMDMCCAWI.SYMPTMS_CODE, FIDFDISYSDMDMCCAWI.SYMPTMS_CONTENT,
+		       FIDFDISYSDMDMCCAWI.USCP_CONTENT,
+		       FIDFDISYSDMDMCCAWI.WITHDRAWAL_PERIOD
+		
+		  FROM (
+		  
+		            SELECT FIDFDISYSDMDMC.FISH_CODE, FIDFDISYSDMDMC.FISH_NAME,
+		                   FIDFDISYSDMDMC.DISS_CODE, FIDFDISYSDMDMC.DISS_NAME,
+		                   FIDFDISYSDMDMC.MDCIN_CODE, FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME,
+		                   FIDFDISYSDMDMC.SYMPTMS_CODE, FIDFDISYSDMDMC.SYMPTMS_CONTENT,
+		                   TO_CHAR(CA.USCP_CONTENT) USCP_CONTENT,
+		                   WI.WITHDRAWAL_PERIOD
+		                   
+		              FROM (
+		              
+		                    SELECT FIDFDISYSD.FISH_CODE, FIDFDISYSD.FISH_NAME,
+		                           LISTAGG(TO_CHAR(FIDFDISYSD.DISS_CODE),'_') WITHIN GROUP (ORDER BY FIDFDISYSD.DISS_CODE) DISS_CODE,
+		                           LISTAGG(TO_CHAR(FIDFDISYSD.DISS_NAME),'_') WITHIN GROUP (ORDER BY FIDFDISYSD.DISS_NAME) DISS_NAME,
+		                           MD.MDCIN_CODE, MD.MDCIN_PRDUCT_NAME,
+		                           FIDFDISYSD.SYMPTMS_CODE, FIDFDISYSD.SYMPTMS_CONTENT
+		                           
+		                      FROM MEDICINE MD, MDCIN_DISS MC,
+		                           
+		                            (
+		                            
+		                                SELECT FIDFDI.FISH_CODE, FIDFDI.DISS_CODE, FIDFDI.FISH_NAME,
+		                                       FIDFDI.DISS_NAME,
+		                                       LISTAGG(TO_CHAR(SY.SYMPTMS_CODE), '_') WITHIN GROUP (ORDER BY SY.SYMPTMS_CODE) SYMPTMS_CODE,
+		                                       LISTAGG(TO_CHAR(SY.SYMPTMS_CONTENT), '_') WITHIN GROUP (ORDER BY SY.SYMPTMS_CONTENT) SYMPTMS_CONTENT
+		                                           
+		                                  FROM SYMPTOMS SY, SYMPTMS_DISS SD,
+		                                      
+		                                        (
+		                                        
+		                                            SELECT FI.FISH_CODE, DI.DISS_CODE, FI.FISH_NAME, DI.DISS_NAME
+		                                              FROM FISH FI, DISS_FISH DF, DISEASE DI
+		                                             WHERE FI.FISH_CODE = DF.FISH_CODE
+		                                               AND DF.DISS_CODE = DI.DISS_CODE
+		                                               AND FI.FISH_NAME LIKE '%' || #fish_name# || '%'
+		                                               
+		                                        ) FIDFDI
+		                                            
+		                                 WHERE FIDFDI.DISS_CODE = SD.DISS_CODE
+		                                   AND SD.SYMPTMS_CODE = SY.SYMPTMS_CODE
+		                                   AND SY.SYMPTMS_CONTENT LIKE '%' || #fish_symptms# || '%'
+		                                   
+		                                GROUP BY FIDFDI.FISH_CODE, FIDFDI.DISS_CODE, FIDFDI.FISH_NAME, FIDFDI.DISS_NAME
+		                                
+		                            ) FIDFDISYSD
+		                                 
+		                     WHERE MD.MDCIN_CODE = MC.MDCIN_CODE
+		                       AND MC.DISS_CODE = FIDFDISYSD.DISS_CODE
+		                    GROUP BY FIDFDISYSD.FISH_CODE, FIDFDISYSD.FISH_NAME, MD.MDCIN_CODE, MD.MDCIN_PRDUCT_NAME, FIDFDISYSD.SYMPTMS_CODE, FIDFDISYSD.SYMPTMS_CONTENT
+		                       
+		                   ) FIDFDISYSDMDMC, CAPACITY_USAGE CA, WITHDRAWAL WI
+		                   
+		             WHERE FIDFDISYSDMDMC.MDCIN_CODE = CA.MDCIN_CODE
+		               AND CA.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+		               AND FIDFDISYSDMDMC.MDCIN_CODE = WI.MDCIN_CODE
+		               AND WI.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+		               
+		            GROUP BY FIDFDISYSDMDMC.FISH_CODE, FIDFDISYSDMDMC.FISH_NAME,
+		                     FIDFDISYSDMDMC.DISS_CODE, FIDFDISYSDMDMC.DISS_NAME,
+		                     FIDFDISYSDMDMC.MDCIN_CODE, FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME,
+		                     FIDFDISYSDMDMC.SYMPTMS_CODE, FIDFDISYSDMDMC.SYMPTMS_CONTENT, TO_CHAR(CA.USCP_CONTENT), WI.WITHDRAWAL_PERIOD
+		               
+		            ORDER BY FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME, FIDFDISYSDMDMC.DISS_NAME
+		            
+		       ) FIDFDISYSDMDMCCAWI, MDCIN_PRSCRPTN MP, PRESCRIPTION PR
+		
+		 WHERE FIDFDISYSDMDMCCAWI.MDCIN_CODE = MP.MDCIN_CODE
+		   AND MP.PRSCRPTN_CODE = #prscrptn_code#
+	
+	</select>
+	
+	
+	<!-- 병명 중복 제거 -->
+	<select id = "getResultPrescriptionDissName" parameterClass="Map" resultClass="String">
+	
+		SELECT DISTINCT TOTAL.DISS_NAME
+		
+		  FROM (
+		  
+		  			SELECT FIDFDISYSDMDMC.FISH_CODE, FIDFDISYSDMDMC.FISH_NAME,
+						   FIDFDISYSDMDMC.DISS_CODE, FIDFDISYSDMDMC.DISS_NAME,
+						   FIDFDISYSDMDMC.MDCIN_CODE, FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME,
+						   FIDFDISYSDMDMC.SYMPTMS_CODE, FIDFDISYSDMDMC.SYMPTMS_CONTENT,
+						   CA.USCP_CONTENT,
+						   WI.WITHDRAWAL_PERIOD
+						   
+					  FROM (
+					  
+							SELECT FIDFDISYSD.FISH_CODE, FIDFDISYSD.FISH_NAME, FIDFDISYSD.DISS_CODE,
+								   FIDFDISYSD.DISS_NAME, MD.MDCIN_CODE, MD.MDCIN_PRDUCT_NAME,
+								   FIDFDISYSD.SYMPTMS_CODE, FIDFDISYSD.SYMPTMS_CONTENT
+								   
+							  FROM MEDICINE MD, MDCIN_DISS MC,
+								   
+									(
+									
+										SELECT FIDFDI.FISH_CODE, FIDFDI.DISS_CODE, FIDFDI.FISH_NAME,
+											   FIDFDI.DISS_NAME, SY.SYMPTMS_CODE, SY.SYMPTMS_CONTENT
+												   
+										  FROM SYMPTOMS SY, SYMPTMS_DISS SD,
+											  
+												(
+												
+													SELECT FI.FISH_CODE, DI.DISS_CODE, FI.FISH_NAME, DI.DISS_NAME
+													  FROM FISH FI, DISS_FISH DF, DISEASE DI
+													 WHERE FI.FISH_CODE = DF.FISH_CODE
+													   AND DF.DISS_CODE = DI.DISS_CODE
+													   AND FI.FISH_NAME LIKE '%' || #fish_name# || '%'
+													   
+												 ) FIDFDI
+													
+										 WHERE FIDFDI.DISS_CODE = SD.DISS_CODE
+										   AND SD.SYMPTMS_CODE = SY.SYMPTMS_CODE
+										   AND SY.SYMPTMS_CONTENT LIKE '%' || #fish_symptms# || '%'
+										   
+									 ) FIDFDISYSD
+										 
+							 WHERE MD.MDCIN_CODE = MC.MDCIN_CODE
+							   AND MC.DISS_CODE = FIDFDISYSD.DISS_CODE
+							   
+						   ) FIDFDISYSDMDMC, CAPACITY_USAGE CA, WITHDRAWAL WI, DISEASE_FILE DF
+						   
+					 WHERE FIDFDISYSDMDMC.MDCIN_CODE = CA.MDCIN_CODE
+					   AND CA.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+					   AND FIDFDISYSDMDMC.MDCIN_CODE = WI.MDCIN_CODE
+					   AND WI.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+					   AND FIDFDISYSDMDMC.DISS_CODE = DF.DISS_CODE
+					   
+					ORDER BY FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME
+	
+				 ) TOTAL
+		
+	</select>
+	
+	
+	<!-- 질병파일 중복 제거 -->
+	<select id = "getResultPrescriptionDiseaseFile" parameterClass="Map" resultClass="String">
+	
+		SELECT DISTINCT TOTAL.FILE_SAVE_NAME
+		
+		  FROM (
+		  
+		  			SELECT FIDFDISYSDMDMC.FISH_CODE, FIDFDISYSDMDMC.FISH_NAME,
+						   FIDFDISYSDMDMC.DISS_CODE, FIDFDISYSDMDMC.DISS_NAME,
+						   FIDFDISYSDMDMC.MDCIN_CODE, FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME,
+						   FIDFDISYSDMDMC.SYMPTMS_CODE, FIDFDISYSDMDMC.SYMPTMS_CONTENT,
+						   CA.USCP_CONTENT,
+						   WI.WITHDRAWAL_PERIOD,
+						   DF.FILE_SAVE_NAME
+						   
+					  FROM (
+					  
+							SELECT FIDFDISYSD.FISH_CODE, FIDFDISYSD.FISH_NAME, FIDFDISYSD.DISS_CODE,
+								   FIDFDISYSD.DISS_NAME, MD.MDCIN_CODE, MD.MDCIN_PRDUCT_NAME,
+								   FIDFDISYSD.SYMPTMS_CODE, FIDFDISYSD.SYMPTMS_CONTENT
+								   
+							  FROM MEDICINE MD, MDCIN_DISS MC,
+								   
+									(
+									
+										SELECT FIDFDI.FISH_CODE, FIDFDI.DISS_CODE, FIDFDI.FISH_NAME,
+											   FIDFDI.DISS_NAME, SY.SYMPTMS_CODE, SY.SYMPTMS_CONTENT
+												   
+										  FROM SYMPTOMS SY, SYMPTMS_DISS SD,
+											  
+												(
+												
+													SELECT FI.FISH_CODE, DI.DISS_CODE, FI.FISH_NAME, DI.DISS_NAME
+													  FROM FISH FI, DISS_FISH DF, DISEASE DI
+													 WHERE FI.FISH_CODE = DF.FISH_CODE
+													   AND DF.DISS_CODE = DI.DISS_CODE
+													   AND FI.FISH_NAME LIKE '%' || #fish_name# || '%'
+													   
+												 ) FIDFDI
+													
+										 WHERE FIDFDI.DISS_CODE = SD.DISS_CODE
+										   AND SD.SYMPTMS_CODE = SY.SYMPTMS_CODE
+										   AND SY.SYMPTMS_CONTENT LIKE '%' || #fish_symptms# || '%'
+										   
+									 ) FIDFDISYSD
+										 
+							 WHERE MD.MDCIN_CODE = MC.MDCIN_CODE
+							   AND MC.DISS_CODE = FIDFDISYSD.DISS_CODE
+							   
+						   ) FIDFDISYSDMDMC, CAPACITY_USAGE CA, WITHDRAWAL WI, DISEASE_FILE DF
+						   
+					 WHERE FIDFDISYSDMDMC.MDCIN_CODE = CA.MDCIN_CODE
+					   AND CA.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+					   AND FIDFDISYSDMDMC.MDCIN_CODE = WI.MDCIN_CODE
+					   AND WI.FISH_CODE = FIDFDISYSDMDMC.FISH_CODE
+					   AND FIDFDISYSDMDMC.DISS_CODE = DF.DISS_CODE
+					   AND DF.FILE_SAVE_NAME LIKE '%' || #fish_name# || '%'
+					   AND DF.FILE_STATUS = 'y'
+					   
+					ORDER BY FIDFDISYSDMDMC.MDCIN_PRDUCT_NAME
+	
+				 ) TOTAL
+		
+	</select>
+	
+	
+	<!-- 특정 의약품에 점수를 등록한 의사코드 개수 가져오기 -->
+	<select id = "searchTreatCodeAddScore" parameterClass="Map" resultClass="int">
+	
+		SELECT COUNT(TREAT_CODE)
+		  FROM MEDICINE_SCORE
+		 WHERE MEM_ID = #mem_id#
+		   AND TREAT_CODE = #treat_code#
+	
+	</select>
+	
+	
+	<!-- 특정 의약품에 점수를 등록한 처방코드 개수 가져오기 -->
+	<select id = "searchPrscrptnCodeAddScore" parameterClass="Map" resultClass="int">
+	
+		SELECT COUNT(PRSCRPTN_CODE)
+		  FROM MEDICINE_SCORE
+		 WHERE MEM_ID = #mem_id#
+		   AND PRSCRPTN_CODE = #prscrptn_code#
+	
+	</select>
+	
+	
+	<!-- 처방받은 의약품 점수를 등록하기 -->
+	<insert id = "insertMedicineScore" parameterClass="Map">
+	
+		<selectKey keyProperty="mdcin_no" resultClass = "String">
+		
+			SELECT 'MS' || MEDICINE_SCORE_SEQ.NEXTVAL FROM DUAL
+		
+		</selectKey>
+	
+		INSERT INTO
+		
+			MEDICINE_SCORE (
+											MDCIN_NO,
+											MDCIN_CODE,
+											MDCIN_SCORE,
+											TREAT_CODE,
+											PRSCRPTN_CODE,
+											MEM_ID
+										 )
+						   VALUES (
+						   					#mdcin_no#,
+						   					#mdcin_code#,
+						   					#mdcin_score#,
+						   					#treat_code#,
+						   					#prscrptn_code#,
+						   					#mem_id#
+						   				 )
+	
+	</insert>
+	
+	
+	<!-- 내가 처방받은 처방코드와 그 처방을 받은 관리원 리스트 가져오기 -->
+	<select id = "getPrescriptionHospitalList" parameterClass="String" resultClass="java.util.HashMap">
+	
+		SELECT MEPR.PRSCRPTN_CODE, HO.HOSPITAL_NAME
+		  FROM (
+		            SELECT PR.PRSCRPTN_CODE, PR.HOSPITAL_CODE, ME.MEM_ID
+		              FROM MEMBER ME, PRESCRIPTION PR
+		             WHERE ME.MEM_ID = PR.MEM_ID
+		               AND ME.MEM_ID = #mem_id#
+		            GROUP BY PR.PRSCRPTN_CODE, PR.HOSPITAL_CODE, ME.MEM_ID
+		            ORDER BY PR.PRSCRPTN_CODE
+		       ) MEPR, HOSPITAL HO
+		 WHERE MEPR.HOSPITAL_CODE = HO.HOSPITAL_CODE
+		 GROUP BY MEPR.PRSCRPTN_CODE, HO.HOSPITAL_NAME
+		 ORDER BY TO_NUMBER(SUBSTR(MEPR.PRSCRPTN_CODE, 3))
+	
+	</select>
+	
+	
+	<!-- 내가 처방받은 진료코드 리스트 가져오기  -->
+	<select id = "getTreatList" parameterClass="String" resultClass="java.util.HashMap">
+	
+		SELECT *
+		  FROM DOCTOR
+		 WHERE MEM_ID = #mem_id#
+		 ORDER BY TREAT_CODE
+	
+	</select>
+			
+</sqlMap>

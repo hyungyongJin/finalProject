@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="secession">
+	<typeAlias alias="secessionVO" type="com.ai.fishdr.vo.SecessionVO"/>
+	<typeAlias alias="memVO" type="com.ai.fishdr.vo.MemberVO"/>
+		
+	<sql id="allMember">
+		SELECT MEM_ID
+			,MEM_NAME
+			,MEM_PWD
+			,MEM_PHONE
+			,MEM_MAIL
+			,MEM_NICKNAME
+			,MEM_STTEMNT_HIT
+			,TO_CHAR(MEM_REG_DATE,'YYYY-MM-DD') AS MEM_REG_DATE
+			FROM MEMBER
+	</sql>	
+	<sql id="secMember">
+		SELECT M.MEM_ID
+			,M.MEM_NAME
+			,M.MEM_PWD
+			,M.MEM_PHONE
+			,M.MEM_MAIL
+			,M.MEM_NICKNAME
+			,TO_CHAR(M.MEM_REG_DATE,'YYYY-MM-DD') MEM_REG_DATE
+			,S.SECSN_REASON
+			FROM MEMBER M, SECESSION S
+			WHERE M.MEM_ID = S.MEM_ID
+				AND M.MEM_STATUS = 'h'
+	</sql>	
+	<sql id="secSearch">
+		<dynamic prepend="AND">
+			<isNotEmpty property="keyword">
+				<isEqual property="search" compareValue="MEMBER">
+					M.MEM_NAME LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			<isNotEmpty property="keyword">
+				<isEqual property="search" compareValue="NICK">
+					M.MEM_NICKNAME LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			<isNotEmpty property="keyword">
+				<isEqual property="search" compareValue="PHONE">
+					M.MEM_PHONE LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	<sql id="search">
+		<dynamic prepend="AND">
+			<isNotEmpty property="keyword">
+				<isEqual property="search" compareValue="MEMBER">
+					MEM_NAME LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			<isNotEmpty property="keyword">
+				<isEqual property="search" compareValue="NICK">
+					MEM_NICKNAME LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+			<isNotEmpty property="keyword">
+				<isEqual property="search" compareValue="PHONE">
+					MEM_PHONE LIKE '%'||#keyword#||'%'
+				</isEqual>
+			</isNotEmpty>
+		</dynamic>
+	</sql>
+	<select id="getMemberList" parameterClass="map" resultClass="memVO">
+		SELECT B.* FROM
+		(SELECT ROWNUM AS RNUM, A.* 
+			FROM(<include refid="allMember"/>
+			WHERE MEM_STATUS = 'y'
+			AND MEM_POSITION = 'mem'
+			<include refid="search"/> 
+			<dynamic>
+			  	<isNotEmpty property="asc">
+			  		ORDER BY MEM_REG_DATE ASC
+			  	</isNotEmpty>
+			  	<isNotEmpty property="desc">
+				 	ORDER BY MEM_REG_DATE DESC
+			  	</isNotEmpty>
+			</dynamic>)A)B
+		<![CDATA[
+		 WHERE B.RNUM >= #startCount#
+			AND B.RNUM<=#endCount#
+		]]>
+		   
+	
+	</select>	
+	
+	<select id="getMemberCnt" parameterClass="map" resultClass="int">
+		SELECT COUNT(*)
+			FROM MEMBER
+			WHERE MEM_STATUS = 'y'
+				AND MEM_POSITION = 'mem'
+			<include refid="search"/> 
+	</select>	
+	
+	<select id="getSecMemberCnt" parameterClass="map" resultClass="int">
+		SELECT COUNT(*)
+				FROM MEMBER
+				WHERE MEM_STATUS = 'h'
+				<include refid="search"/> 
+	</select>
+	<select id="getSecMemberList" parameterClass="map" resultClass="java.util.HashMap">
+		SELECT B.* FROM
+		(SELECT ROWNUM AS RNUM, A.* 
+			FROM(<include refid="secMember"/>
+			<include refid="secSearch"/> 
+			<dynamic>
+			  	<isNotEmpty property="asc">
+			  		ORDER BY M.MEM_REG_DATE ASC
+			  	</isNotEmpty>
+			  	<isNotEmpty property="desc">
+				 	ORDER BY M.MEM_REG_DATE DESC
+			  	</isNotEmpty>
+			</dynamic>
+			)A)B
+		<![CDATA[
+		 WHERE B.RNUM >= #startCount#
+			AND B.RNUM<=#endCount#
+		]]>	
+	</select>	
+		
+		
+		
+	<select id="getBlackMemberCnt" parameterClass="map" resultClass="int">
+		SELECT COUNT(*)
+				FROM MEMBER
+				WHERE MEM_STATUS = 'y'
+				<![CDATA[
+					AND MEM_STTEMNT_HIT > 0
+				]]>
+				<include refid="search"/> 
+	</select>
+	<select id="getBlackMemberList" parameterClass="map" resultClass="java.util.HashMap">
+		SELECT B.* FROM
+		(SELECT ROWNUM AS RNUM, A.* 
+			FROM(<include refid="allMember"/>
+				WHERE MEM_STATUS = 'y'
+				<![CDATA[
+					AND MEM_STTEMNT_HIT > 0
+				]]>
+			<include refid="search"/> 
+			<dynamic prepend="ORDER BY NULL">
+			  	<isNotEmpty property="asc">
+			  		,MEM_REG_DATE ASC
+			  	</isNotEmpty>
+			  	<isNotEmpty property="desc">
+				 	,MEM_REG_DATE DESC
+			  	</isNotEmpty>
+			  	<isNotEmpty property="sttAsc">
+			  		,MEM_STTEMNT_HIT ASC
+			  	</isNotEmpty>
+			  	<isNotEmpty property="sttDesc">
+				 	,MEM_STTEMNT_HIT DESC
+			  	</isNotEmpty>
+			</dynamic>)A)B
+		<![CDATA[
+		 WHERE B.RNUM >= #startCount#
+			AND B.RNUM<=#endCount#
+		]]>	
+	</select>		
+	
+	<update id="deleteMember" parameterClass="String">
+		UPDATE MEMBER
+			SET MEM_STATUS = 'n'
+			WHERE MEM_ID = #mem_id#
+	</update>	
+		
+	<update id="updateSttemnt" parameterClass="String">
+		UPDATE MEMBER
+			SET MEM_STTEMNT_HIT =  MEM_STTEMNT_HIT+1
+			WHERE MEM_ID = #mem_id#
+	</update>	
+		
+		
+	<select id="getMemsSttBoard" parameterClass="String" resultClass="java.util.HashMap">
+		SELECT A.* 
+		FROM(SELECT B.BO_TITLE
+			,B.BO_WRITER
+			, BF.BOARD_NAME
+			,(SELECT COUNT(*) FROM STTEMNT C WHERE C.BO_NO=B.BO_NO )AS CNT
+			FROM BOARD B
+				, STTEMNT S 
+				, BOARDMANAGE BF
+			WHERE B.BO_NO = S.BO_NO
+			AND B.BOARD_CODE = BF.BOARD_CODE
+			AND B.BO_WRITER = #mem_id#) A
+		GROUP BY A.BO_TITLE,A.BO_WRITER,A.BOARD_NAME,A.CNT
+	</select>	
+		
+	<select id="allMemberForExcel" resultClass="memVO">
+		SELECT * FROM MEMBER WHERE MEM_STATUS = 'y' AND MEM_POSITION= 'mem'
+	</select>
+	
+	<update id="backMemStt" parameterClass="list">
+		UPDATE MEMBER
+		 SET MEM_STTEMNT_HIT = 0
+		 WHERE MEM_ID IN
+		 <iterate open="(" close=")" conjunction=",">
+		 	#forStt[]#
+		 </iterate>
+	</update>
+		
+</sqlMap>

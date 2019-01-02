@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//ibatis.apache.org//DTD SQL Map Config 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-config-2.dtd">
+<sqlMapConfig>
+    <properties resource="com/ai/fishdr/ibatis/config/SqlMapConfig.properties" />
+    <settings cacheModelsEnabled="true" enhancementEnabled="true" lazyLoadingEnabled="true" maxRequests="32" maxSessions="10" maxTransactions="5" useStatementNamespaces="true" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/member.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/capacityUsage.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/diseaseFile.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/disease.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/dissFish.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/doctor.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/facepicture.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/fishgram.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/fishgramComment.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/fishgramFile.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/fishgramLike.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/fish.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/friend.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/hospital.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/mdcinDiss.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/mdcinPrscrptn.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/medicineCategory.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/medicineScore.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/medicine.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/message.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/notiCategory.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/notification.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/prescription.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/secession.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/stats.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/symptmsDiss.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/symptoms.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/withdrawal.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/boardManage.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/board.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/boardComment.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/freeboardFile.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/freeboard.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/noticeboardFile.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/noticeboard.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/imageboard.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/imageboardFile.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/boardFile.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/conversation.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/fishSymptms.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/annymty.xml" />
+    <sqlMap resource="com/ai/fishdr/ibatis/mapper/diseaseboard.xml" />
+</sqlMapConfig>

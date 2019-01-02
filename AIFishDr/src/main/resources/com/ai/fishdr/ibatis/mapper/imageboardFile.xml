@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="imageboardFile">
+
+	<typeAlias alias="imageboardFileVO" type="com.ai.fishdr.vo.BoardFileVO"/>
+		
+	<insert id="insertBoardFile" parameterClass="imageboardFileVO">
+	INSERT INTO BOARD_FILE
+		(FILE_NO
+		,FILE_NAME
+		,FILE_SAVE_NAME
+		,FILE_CONTENT_TYPE
+		,FILE_SIZE
+		,BO_NO
+		)
+		VALUES
+		(
+		BOARD_FILE_SEQ.NEXTVAL
+		,#file_name#
+		,#file_save_name#
+		,#file_content_type#
+		,#file_size#
+		,#bo_no#
+		)
+	</insert>	
+	
+	<select id="getBoardFileList" parameterClass="map" resultClass="imageboardFileVO">
+		SELECT *
+			FROM BOARD_FILE
+			WHERE FILE_STATUS = 'y'
+				AND BO_NO = #bo_no#
+	</select>
+	
+</sqlMap>

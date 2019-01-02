@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "fishgramComment">
+
+	<typeAlias alias="fishgramCommentVO" type="com.ai.fishdr.vo.FishgramCommentVO"/>
+	
+	
+	<sql id = "selectAll">
+		
+		SELECT M.MEM_ID, M.MEM_NICKNAME, M.PROFILE_STATUS, C.BO_NO, C.COMMENT_NO, C.COMMENT_CONTENT, C.COMMENT_REG_DATE, P.FP_FILE_SAVE_NAME
+		  FROM MEMBER M, FISHGRAM_COMMENT C, FACEPICTURE P
+		 WHERE M.MEM_ID = P.FP_MEM_ID
+		   AND M.MEM_ID = C.MEM_ID
+		   AND C.BO_NO = #bo_no#
+		   AND C.COMMENT_STATUS = 'y'
+		ORDER BY COMMENT_NO DESC
+		 	
+	</sql>
+	
+	
+	<!-- 피쉬그램 댓글 등록 -->
+	<insert id = "insertFishgramDiaryComment" parameterClass = "Map">
+	
+		<selectKey keyProperty="comment_no" resultClass = "String">
+		
+			SELECT FISHGRAM_COMMENT_SEQ.NEXTVAL FROM DUAL
+		
+		</selectKey>
+	
+	
+		INSERT INTO
+		
+			FISHGRAM_COMMENT (
+								COMMENT_NO,
+								COMMENT_CONTENT,
+								BO_NO,
+								MEM_ID
+							)
+					
+			 VALUES (
+						#comment_no#,
+						#comment_content#,
+						#bo_no#,
+						#mem_id#
+				    )								
+				
+	</insert>
+	
+	
+	<!-- 피쉬그램 댓글 수정 -->
+	<update id = "modifyFishgramDiaryComment" parameterClass = "Map">
+	
+		UPDATE FISHGRAM_COMMENT
+		   SET COMMENT_CONTENT = #comment_content#
+		 WHERE COMMENT_NO = #comment_no#
+	
+	</update>
+	
+	
+	<!-- 피쉬그램 댓글 삭제 -->
+	<update id = "deleteFishgramDiaryComment" parameterClass = "Map">
+	
+		UPDATE FISHGRAM_COMMENT
+		   SET COMMENT_STATUS = 'n'
+		 WHERE COMMENT_NO = #comment_no#
+		
+	</update>
+		
+	
+	<!-- 피쉬그램 댓글 리스트 -->
+	<select id = "getFishgramDiaryCommentList" parameterClass="Map" resultClass="java.util.HashMap">
+
+		SELECT B.*
+		
+		  FROM (SELECT ROWNUM RNUM, A.*
+		  		  FROM (<include refid = "selectAll"/>) A
+		  	    ) B
+		  
+		<![CDATA[
+		
+		 WHERE B.RNUM >= #startCount#
+		   AND B.RNUM <= #endCount#
+		
+		]]>
+		
+		ORDER BY B.RNUM DESC
+		  
+	</select>
+	
+	
+	<!-- 특정 글에 댓글을 올린 아이디 리스트 (중복제거, 아이디 오름차순) -->
+	<select id = "getCommentMemIdNoDuplicate" resultClass="String">
+
+		SELECT DISTINCT MEM_ID
+		  FROM FISHGRAM_COMMENT
+		 ORDER BY MEM_ID
+	
+	</select>
+	
+	
+	<!-- 특정 글의 댓글 총 개수 -->
+	<select id = "totalFishgramDiaryCommentCount" parameterClass="Map" resultClass="int">
+	
+		SELECT COUNT(COMMENT_NO)
+		  FROM FISHGRAM_COMMENT
+		 WHERE BO_NO = #bo_no#
+		   AND COMMENT_STATUS = 'y' 
+		
+	</select>
+	
+		
+</sqlMap>

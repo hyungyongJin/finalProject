@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace = "fishgram">
+
+	<typeAlias alias="fishgramVO" type="com.ai.fishdr.vo.FishgramVO"/>
+	
+	<sql id = "selectAll">
+		
+		SELECT *
+		  FROM FISHGRAM
+		 WHERE BO_WRITER = #bo_writer#
+		   AND BO_STATUS = 'y'
+		   	 	
+	</sql>
+	
+	<!-- 피쉬그램 검색 -->
+	<sql id = "searchCondition">
+	
+		<dynamic prepend = "AND">
+	
+			<isEmpty property = "search_keyword">
+			
+				1 = 1
+				
+			</isEmpty>
+				
+			<isNotEmpty property = "search_keyword">
+				
+				<isEqual property = "search_keycode" compareValue="TOTAL" open = "(" close = ")">
+			
+					BO_TITLE LIKE '%' || #search_keyword# || '%' OR
+					BO_CONTENT LIKE '%' || #search_keyword# || '%'
+					
+				</isEqual>
+				
+				<isEqual property = "search_keycode" compareValue="TITLE">
+				
+					BO_TITLE LIKE '%' || #search_keyword# || '%'
+				
+				</isEqual>
+				
+				<isEqual property = "search_keycode" compareValue="CONTENT">
+				
+					BO_CONTENT LIKE '%' || #search_keyword# || '%'
+				
+				</isEqual>
+				
+			</isNotEmpty>
+		
+		</dynamic>
+		
+	</sql>
+	
+	
+	<!-- 피쉬그램 리스트 -->
+	<select id = "getFishgramDiaryList" parameterClass="Map" resultClass="fishgramVO">
+	
+		SELECT B.*
+		
+		  FROM (SELECT ROWNUM RNUM, A.*
+		  		  FROM (<include refid = "selectAll"/>
+		  		  	    <include refid = "searchCondition"/>
+		  	  			ORDER BY BO_NO
+		  	   		   ) A
+		  	    ) B
+		  
+		<![CDATA[
+		
+		 WHERE B.RNUM <= #startCount#
+		   AND B.RNUM >= #endCount#
+		
+		]]>
+		
+		ORDER BY B.RNUM DESC
+		  
+	</select>
+	
+	<!-- 검색 조건에 맞는 피쉬그램 글 개수 구하기 -->
+	<select id = "totalFishgramDiaryCount" parameterClass="Map" resultClass="int">
+	
+		SELECT COUNT(BO_NO)
+		  FROM FISHGRAM
+		 WHERE BO_WRITER = #bo_writer#
+		   AND BO_STATUS = 'y'
+		<include refid = "searchCondition"/>
+		
+	</select>
+	
+	
+	<!-- 피쉬그램 글 총 개수 구하기 -->
+	<select id = "totalFishgramDiaryAllCount" parameterClass="Map" resultClass="int">
+	
+		SELECT COUNT(BO_NO)
+		  FROM FISHGRAM
+		 WHERE BO_WRITER = #bo_writer#
+		   AND BO_STATUS = 'y'
+		
+	</select>
+	
+	
+	<!-- 자신의 모든 글에 카운팅된 좋아요 총 수 -->
+	<select id = "totalLikeAllCount" parameterClass="Map" resultClass="int">
+
+		SELECT COUNT(L.LIKE_CODE)
+		  FROM FISHGRAM_LIKE L, FISHGRAM FG
+		 WHERE L.BO_NO = FG.BO_NO
+		   AND FG.BO_WRITER = #bo_writer#
+	
+	</select>
+	
+	
+	<!-- 로그인 한 회원의 친구 총 인원 구하기 -->
+	<select id = "totalSearchFriendAllCount" parameterClass="String" resultClass="int">
+	
+		SELECT COUNT(MEM_ID)
+		
+  		  FROM (
+		            SELECT M.MEM_ID, M.MEM_NICKNAME, M.PROFILE_STATUS, FP.FP_FILE_SAVE_NAME, TO_CHAR(FR.FR_APPLY_DATE, 'YYYY-MM-DD HH24:MI') FR_APPLY_DATE
+		              FROM MEMBER M, FACEPICTURE FP, FRIEND FR
+		             WHERE M.MEM_ID = FP.FP_MEM_ID(+)
+		               AND (M.MEM_ID = FR.MEM_ID OR M.MEM_ID = FR.FR_ID)
+		               AND (FR.MEM_ID = #mem_id# OR FR.FR_ID = #mem_id#)
+		               AND FR.FR_STATUS = 'y'
+		            ORDER BY M.MEM_ID
+		       )
+		       
+ 		 WHERE MEM_ID != #mem_id#
+		
+	</select>
+	
+	
+	<!-- 피쉬그램 글 등록 -->
+	<insert id = "insertFishgramDiary" parameterClass = "fishgramVO">
+	
+		<selectKey keyProperty="bo_no" resultClass = "String">
+		
+			SELECT FISHGRAM_SEQ.NEXTVAL FROM DUAL
+		
+		</selectKey>
+	
+	
+		INSERT INTO
+		
+			FISHGRAM (
+						BO_NO,
+						BO_TITLE,
+						BO_CONTENT,
+						BO_WRITER,
+						BOARD_CODE
+					)
+					
+			 VALUES (
+						#bo_no#,
+						#bo_title#,
+						#bo_content#,
+						#bo_writer#,
+						'board004'
+				    )								
+				
+	</insert>
+	
+	
+	<!-- 피쉬그램 글 수정 -->
+	<update id = "updateFishgramDiary" parameterClass = "fishgramVO">
+	
+		UPDATE FISHGRAM
+		   SET BO_TITLE = #bo_title#,
+		       BO_CONTENT = #bo_content#,
+		       BO_WRITER = #bo_writer#
+		 WHERE BO_NO = #bo_no#
+
+	</update>
+	
+	
+	<!-- 피쉬그램 글 삭제 -->
+	<update id = "deleteFishgramDiary" parameterClass="String">
+	
+		UPDATE FISHGRAM
+		   SET BO_STATUS = 'n'
+		 WHERE BO_NO = #bo_no#
+	
+	</update>
+	
+	
+	
+	<!-- 피쉬그램 게시글 번호를 이용한 게시글 정보 가져오기 -->
+	<select id = "getFishgramDiaryInfoAsBoNo" parameterClass = "Map" resultClass = "fishgramVO">
+	
+		SELECT *
+		  FROM FISHGRAM
+		 WHERE BO_NO = #bo_no#
+	
+	</select>
+
+
+	<!-- 게시판 작성자를 이용하여 닉네임 정보 가져오기 -->	
+	<select id = "getMemIdAsBoWriter" parameterClass = "Map" resultClass = "String">
+
+		SELECT M.MEM_NICKNAME
+		
+		  FROM FISHGRAM F, MEMBER M
+		  
+		 WHERE F.BO_WRITER = M.MEM_ID
+		 
+		   AND M.MEM_ID = #bo_writer#
+		   
+		 GROUP BY M.MEM_NICKNAME
+	
+	</select>
+	
+	
+	<!-- 조회수 1 늘리기 -->
+	<update id = "increaseHitCount" parameterClass="Map">
+	
+		UPDATE FISHGRAM
+		   SET BO_HIT = TO_NUMBER(#bo_hit#) + 1
+		 WHERE BO_NO = #bo_no#
+		
+	</update>
+	
+	
+			
+</sqlMap>
