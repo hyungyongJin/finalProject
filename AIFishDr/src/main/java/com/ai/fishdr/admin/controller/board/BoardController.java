@@ -54,7 +54,7 @@ import com.ai.fishdr.vo.MemberVO;
 import com.ai.fishdr.vo.MessageVO;
 import com.ai.fishdr.vo.SttemntVO;
 /**
- * 
+ * 테스트
  * @Class Name :BoardController.java
  * @Description : 관리자 게시판 전체관리 컨트롤러 
  * @Modification Information
@@ -108,6 +108,7 @@ public class BoardController {
 		gen.daoMaker(boardName);
 		gen.jspFileMaker(boardName,boardKrName, boardCode);
 		model.setViewName("jsonConvertView");
+
 		return model;
 	}
 	/**
@@ -331,7 +332,7 @@ public class BoardController {
 		return model;
 	}
 	/**
-	 * 
+	 * ?
 	 *  개요 : 신고게시글 리스트불러오는 메서드
 	 * @Method Name : getBlackWriteList
 	 * @author : 진형용
